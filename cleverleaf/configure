@@ -1,0 +1,118 @@
+#!/usr/bin/env bash
+
+prefix=$(pwd)
+
+clear=false
+mode=Debug
+profile=$(hostname)
+while getopts hm:cp: opt; do
+    case $opt in
+        h)
+            echo "USAGE: cleverleaf/configure OPTIONS"
+            exit 1
+            ;;
+        m)
+            mode=$OPTARG
+            ;;
+        c)
+            clear=true
+            ;;
+        p)
+            profile=$OPTARG
+            ;;
+        \?)
+            echo "Invalid option: -$OPTARG" >&2
+            exit 1
+            ;;
+    esac
+done
+
+shift $((OPTIND-1))
+pkg=$1
+
+source_prefix=$prefix
+source_dir=$prefix/$pkg
+
+build_prefix=$prefix/$profile/$mode/build
+build_dir=$build_prefix/$pkg
+
+install_prefix=$prefix/$profile/$mode/install
+install_dir=$install_prefix/$pkg
+
+cuda_arch=sm_60
+
+if [ "$clear" = true ]; then
+    rm -r $build_dir
+fi
+
+mkdir -p $build_dir
+
+if [ "$pkg" = RAJA ]; then
+    cd $build_dir
+    cmake -D CMAKE_CXX_COMPILER=$CXX \
+          -D CMAKE_BUILD_TYPE=$mode \
+          -D CMAKE_INSTALL_PREFIX=$install_dir \
+          -D CUDA_ARCH=$cuda_arch \
+          -D ENABLE_OPENMP=OFF \
+          -D ENABLE_CUDA=ON \
+          -D ENABLE_TESTS=ON \
+          -D ENABLE_EXAMPLES=OFF \
+          $source_dir
+elif [ "$pkg" = hdf5 ]; then
+    source_dir=$prefix/hdf5-1.10.1
+    cd $build_dir
+    cmake -D CMAKE_CXX_COMPILER=$CXX \
+          -D CMAKE_BUILD_TYPE=$mode \
+          -D CMAKE_INSTALL_PREFIX=$install_dir \
+          $source_dir
+elif [ "$pkg" = Umpire ]; then
+    cd $build_dir
+    cmake -D CMAKE_CXX_COMPILER=$CXX \
+          -D CMAKE_BUILD_TYPE=$mode \
+          -D CMAKE_INSTALL_PREFIX=$install_dir \
+          -D BUILD_SHARED_LIBS=OFF \
+          -D ENABLE_OPENMP=OFF \
+          -D ENABLE_CUDA=ON \
+          -D ENABLE_EXAMPLES=OFF \
+          $source_dir
+elif [ "$pkg" = SAMRAI ]; then
+    cd $build_dir
+    cmake -D CMAKE_CXX_COMPILER=$CXX \
+          -D CMAKE_BUILD_TYPE=$mode \
+          -D CMAKE_INSTALL_PREFIX=$install_dir \
+          -D CMAKE_Fortran_COMPILER=xlf \
+          -D CMAKE_CUDA_FLAGS="-O3 -arch=$cuda_arch --expt-relaxed-constexpr --expt-extended-lambda -std=c++11" \
+          -D MPI_Fortran_COMPILER=mpixlf \
+          -D HDF5_DIR=$install_prefix/hdf5/share/cmake \
+          -D RAJA_DIR=$install_prefix/RAJA/share/raja/cmake \
+          -D umpire_DIR=$install_prefix/Umpire/share/umpire/cmake \
+          -D BUILD_SHARED_LIBS=OFF \
+          -D ENABLE_DOXYGEN=OFF \
+          -D ENABLE_MPI=ON \
+          -D ENABLE_OPENMP=OFF \
+          -D ENABLE_CUDA=ON \
+          -D ENABLE_HDF5=ON \
+          -D ENABLE_EXAMPLES=OFF \
+          $source_dir
+elif [ "$pkg" = cleverleaf ]; then
+    cd $build_dir
+    cmake -D CMAKE_CXX_COMPILER=$CXX \
+          -D CMAKE_BUILD_TYPE=$mode \
+          -D CMAKE_INSTALL_PREFIX=$install_dir \
+          -D CMAKE_CUDA_FLAGS="-O3 -arch=$cuda_arch" \
+          -D CMAKE_PREFIX_PATH=$install_prefix/SAMRAI \
+          -D HDF5_DIR=$install_prefix/hdf5/share/cmake \
+          -D RAJA_DIR=$install_prefix/RAJA/share/raja/cmake \
+          -D umpire_DIR=$install_prefix/Umpire/share/umpire/cmake \
+          -D SAMRAI_DIR=$install_prefix/SAMRAI/share/SAMRAI/cmake \
+          -D ENABLE_CUDA=ON \
+          -D ENABLE_OPENMP=OFF \
+          -D ENABLE_MPI=ON \
+          $source_dir
+else
+    echo Invalid package: $pkg >&2
+    exit 1
+fi
+
+echo "Build directory: " $build_dir
+echo "Install directory: " $install_dir

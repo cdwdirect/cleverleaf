@@ -1,0 +1,12 @@
+build-*/
+install-*/
+.DS_Store
+src/examples/using-with-cmake/build
+src/examples/using-with-make/example
+*.pyc
+.ipynb_checkpoints
+visitlog.py
+uberenv_libs
+conduit.docker.src.tar
+conduit.docker.src.tar.gz
+Testing/

@@ -1,0 +1,469 @@
+//////////////////////////////////////////////////////////////////////////////
+// Crown Copyright 2014 AWE, Copyright 2014 David Beckingsale.
+//
+// This file is part of CleverLeaf.
+//
+// CleverLeaf is free software: you can redistribute it and/or modify it under
+// the terms of the GNU General Public License as published by the Free Software
+// Foundation, either version 3 of the License, or (at your option) any later
+// version.
+//
+// CleverLeaf is distributed in the hope that it will be useful, but WITHOUT ANY
+// WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
+// A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License along with
+// CleverLeaf. If not, see http://www.gnu.org/licenses/.
+//////////////////////////////////////////////////////////////////////////////
+#ifndef CLEVERLEAF_CLEVERLEAF_H_
+#define CLEVERLEAF_CLEVERLEAF_H_
+
+#include "SAMRAI/appu/VisItDataWriter.h"
+#include "SAMRAI/mesh/StandardTagAndInitStrategy.h"
+#include "SAMRAI/hier/PatchHierarchy.h"
+#include "SAMRAI/hier/PatchLevel.h"
+#include "SAMRAI/hier/IntVector.h"
+
+#include "SAMRAI/geom/CartesianGridGeometry.h"
+#include "SAMRAI/appu/CartesianBoundaryDefines.h"
+#include "SAMRAI/tbox/Timer.h"
+#include "SAMRAI/tbox/StartupShutdownManager.h"
+
+#include "LagrangianEulerianPatchStrategy.h"
+#include "LagrangianEulerianLevelIntegrator.h"
+
+#include "pdat/detail.h"
+
+namespace clever {
+namespace hydro {
+/**
+ * @class Cleverleaf
+ *
+ * Cleverleaf extends LagrangianEulerianPatchStrategy to provide necessary
+ * physics.
+ *
+ * Cleverleaf implements the abstract methods in the
+ * LagrangianEulerianPatchStrategy class with the concrete versions of the
+ * methods needed to run the required physics on a patch.
+ *
+ * <b> Input Parameters </b>
+ *
+ * <b> Definitions: </b>
+ *    - \b    dim
+ *       the dimension of the problem.
+ *
+ *    - \b    vis_dump_interval
+ *       the frequency at which visualisation dumps are written.
+ *
+ *    - \b    field_summary_interval
+ *       the frequency at which the field summary is calculated.
+ *
+ *    - \b    basename
+ *       the basename to use for output files.
+ *
+ *    - \b    log_filename
+ *       the filename for logging output.
+ *
+ *    - \b    log_all_nodes
+ *       whether or not to log output from all nodes.
+ *
+ *    - \b    tag_all
+ *       whether or not to tag all cells (used for debugging).
+ *
+ *    - \b    tag_q
+ *       threshold for viscosity tagging.
+ *
+ *    - \b    tag_density
+ *       gradient threshold for density tagging.
+ *
+ *    - \b    tag_energy
+ *       gradient threshold for energy tagging.
+ *
+ *    - \b    physics_weight
+ *       multiplicative factor to adjust cost of physics kernels.
+ *
+ *    - \b    states
+ *       set of states.
+ *
+ *        - \b    num_states
+ *           the number of states in the input deck.
+ *
+ *        - \b    state_n
+ *           set of parameters describing state n.
+ *
+ *            - \b    geometry
+ *               the geometry of the state. Can be either "RECTANGLE",
+ *               "CIRCLE", or "POINT"
+ *
+ *            - \b    min
+ *               lower-left coordinate of the state.
+ *
+ *            - \b    max
+ *               upper-right coordinate of the state.
+ *
+ *            - \b    center
+ *               center coordinate of the state (only for "CIRCLE" or "POINT").
+ *
+ *            - \b    radius
+ *               radius of the state (only for "CIRCLE").
+ *
+ *            - \b    density
+ *               initial density of the state.
+ *
+ *            - \b    energy
+ *               initial energy of the state.
+ *
+ *            - \b    xvel
+ *               initial x-velocity of the state.
+ *
+ *            - \b    yvel
+ *               initial y-velocity of the state.
+ *
+ * <b> Details: </b> <br>
+ * <table>
+ *   <tr>
+ *     <th>parameter</th>
+ *     <th>type</th>
+ *     <th>default</th>
+ *   </tr>
+ *   <tr>
+ *     <td>dim</td>
+ *     <td>int</td>
+ *     <td>2</td>
+ *   </tr>
+ *   <tr>
+ *     <td>vis_dump_interval</td>
+ *     <td>int</td>
+ *     <td>1</td>
+ *   </tr>
+ *   <tr>
+ *     <td>field_summary_interval</td>
+ *     <td>int</td>
+ *     <td>10</td>
+ *   </tr>
+ *   <tr>
+ *     <td>basename</td>
+ *     <td>string</td>
+ *     <td>input filename</td>
+ *   </tr>
+ *   <tr>
+ *     <td>log_filename</td>
+ *     <td>string</td>
+ *     <td>basename</td>
+ *   </tr>
+ *   <tr>
+ *     <td>log_all_nodes</td>
+ *     <td>bool</td>
+ *     <td>FALSE</td>
+ *   </tr>
+ *   <tr>
+ *     <td>tag_all</td>
+ *     <td>bool</td>
+ *     <td>FALSE</td>
+ *   </tr>
+ *   <tr>
+ *     <td>tag_q</td>
+ *     <td>double</td>
+ *     <td>0.001</td>
+ *   </tr>
+ *   <tr>
+ *     <td>tag_density</td>
+ *     <td>double</td>
+ *     <td>0.1</td>
+ *   </tr>
+ *   <tr>
+ *     <td>tag_energy</td>
+ *     <td>double</td>
+ *     <td>0.1</td>
+ *   </tr>
+ *   <tr>
+ *     <td>physics_weight</td>
+ *     <td>int</td>
+ *     <td>1</td>
+ *   </tr>
+ *   <tr>
+ *     <td colspan=3><b>states</b></td>
+ *   </tr>
+ *   <tr>
+ *     <td>num_states</td>
+ *     <td>int</td>
+ *     <td>N/A</td>
+ *   </tr>
+ *   <tr>
+ *     <td colspan=3><b>state_n</b></td>
+ *   </tr>
+ *   <tr>
+ *     <td>geometry</td>
+ *     <td>string</td>
+ *     <td>"RECTANGLE"</td>
+ *   </tr>
+ *   <tr>
+ *     <td>min</td>
+ *     <td>pair</td>
+ *     <td>N/A</td>
+ *   </tr>
+ *   <tr>
+ *     <td>max</td>
+ *     <td>pair</td>
+ *     <td>N/A</td>
+ *   </tr>
+ *   <tr>
+ *     <td>center</td>
+ *     <td>pair</td>
+ *     <td>N/A</td>
+ *   </tr>
+ *   <tr>
+ *     <td>radius</td>
+ *     <td>double</td>
+ *     <td>-1</td>
+ *   </tr>
+ *   <tr>
+ *     <td>density</td>
+ *     <td>double</td>
+ *     <td>N/A</td>
+ *   </tr>
+ *   <tr>
+ *     <td>energy</td>
+ *     <td>double</td>
+ *     <td>N/A</td>
+ *   </tr>
+ *   <tr>
+ *     <td>xvel</td>
+ *     <td>double</td>
+ *     <td>0.0</td>
+ *   </tr>
+ *   <tr>
+ *     <td>yvel</td>
+ *     <td>double</td>
+ *     <td>0.0</td>
+ *   </tr>
+ * </table>
+ *
+ * A sample input file entry might look like this:
+ *
+ * @code
+ *    Cleverleaf {
+ *        dim = 2
+ *        vis_dump_interval = 1
+ *        field_summary_interval = 5
+ *
+ *        states {
+ *            num_states = 2
+ *
+ *            state0 {
+ *                density = 0.2e0
+ *                energy = 1.e0
+ *            }
+ *
+ *            state1 {
+ *                geometry = "RECTANGLE"
+ *                min = 0.e0, 0.e0
+ *                max = 5.e0, 2.e0
+ *
+ *                density = 1.e0
+ *                energy = 2.5e0
+ *            }
+ *        }
+ *    }
+ * @endcode
+ */
+class Cleverleaf:
+    public LagrangianEulerianPatchStrategy
+{
+public:
+  /**
+   * Create a new CleverLeaf object
+   *
+   * @param input_database The InputDatabase containing setup parameters.
+   * @param hierarchy The PatchHierarchy to use.
+   * @param dim The dimension of the problem.
+   * @param grid_geometry The GridGeometry to use.
+   */
+  Cleverleaf(
+    std::shared_ptr<SAMRAI::tbox::Database> input_database,
+    std::shared_ptr<SAMRAI::hier::PatchHierarchy> hierarchy,
+    const SAMRAI::tbox::Dimension& dim,
+    std::shared_ptr<SAMRAI::geom::CartesianGridGeometry> grid_geometry);
+
+  /**
+   * Register a VisitDataWriter with the class.
+   *
+   * Variables are then added to the VisitDataWriter in order to be output
+   * during visulisation dumps.
+   *
+   * @param writer The VisitDataWriter to register.
+   */
+  void registerVisItDataWriter(
+    std::shared_ptr<SAMRAI::appu::VisItDataWriter> writer);
+
+  void registerModelVariables(LagrangianEulerianLevelIntegrator* integrator);
+
+  void initializeDataOnPatch(
+    SAMRAI::hier::Patch& patch,
+    double init_data_time,
+    bool initial_time);
+
+  void accelerate(
+    SAMRAI::hier::Patch& patch,
+    double dt);
+
+  void ideal_gas_knl(
+    SAMRAI::hier::Patch& patch,
+    const bool predict);
+
+  void viscosity_knl(
+    SAMRAI::hier::Patch& patch);
+
+  double calc_dt_knl(
+    SAMRAI::hier::Patch& patch);
+
+  void pdv_knl(
+    SAMRAI::hier::Patch& patch,
+    const double dt,
+    const bool predict);
+
+  void flux_calc_knl(
+    SAMRAI::hier::Patch& patch,
+    double dt);
+
+  void advec_cell(
+    SAMRAI::hier::Patch& patch,
+    const int sweep_number,
+    const int direction);
+
+  void advec_mom(
+    SAMRAI::hier::Patch& patch,
+    const int sweep_number,
+    const int direction,
+    const int which_vel);
+
+  void setPhysicalBoundaryConditions(
+    SAMRAI::hier::Patch& patch,
+    const double fill_time,
+    const hier::IntVector& ghost_width_to_fill);
+
+  void field_summary(
+    SAMRAI::hier::Patch& patch,
+    double* total_volume,
+    double* total_mass,
+    double* total_pressure,
+    double* total_internal_energy,
+    double* total_kinetic_energy,
+    int* total_effective_cells);
+
+  virtual void tagGradientDetectorCells(
+    SAMRAI::hier::Patch& patch,
+    const double regrid_time,
+    const bool initial_error,
+    const int tag_index);
+
+  void debug_knl(SAMRAI::hier::Patch& patch);
+
+  void debug(
+    SAMRAI::hier::Patch& patch,
+    std::shared_ptr<CellData> data);
+
+  void debug(
+    SAMRAI::hier::Patch& patch,
+    std::shared_ptr<NodeData> data);
+
+  void debug(
+    SAMRAI::hier::Patch& patch,
+    std::shared_ptr<SideData> data);
+
+  void fillLevelIndicator(
+    SAMRAI::hier::Patch& patch,
+    const int level_number);
+
+  void setBCs(
+    std::shared_ptr<CellData> data,
+    const SAMRAI::hier::Box& bbox,
+    const int edge,
+    const int ghosts);
+  void setBCs(
+    std::shared_ptr<NodeData> data,
+    const SAMRAI::hier::Box& bbox,
+    const int edge,
+    const int ghosts);
+  void setBCs(
+    std::shared_ptr<SideData> data,
+    const SAMRAI::hier::Box& bbox0,
+    const SAMRAI::hier::Box& bbox1,
+    const int edge,
+    const int ghosts);
+
+private:
+  std::shared_ptr<SAMRAI::hier::PatchHierarchy> d_hierarchy;
+  std::shared_ptr<SAMRAI::appu::VisItDataWriter> d_visit_writer;
+
+  std::shared_ptr<SAMRAI::geom::CartesianGridGeometry> d_grid_geometry;
+
+  const SAMRAI::tbox::Dimension d_dim;
+
+  SAMRAI::hier::IntVector d_nghosts;
+
+  std::shared_ptr<SAMRAI::tbox::Database> input_db;
+  const std::string state_prefix;
+
+  bool d_tag_all;
+  bool d_tag_q;
+  bool d_tag_density;
+  bool d_tag_energy;
+  bool d_tag_pressure;
+
+  Real d_tag_q_threshold;
+  Real d_tag_density_gradient;
+  Real d_tag_energy_gradient;
+  Real d_tag_pressure_gradient;
+
+  int d_pdv_weight;
+
+  bool d_gravity;
+
+  std::shared_ptr<NodeVariable> d_velocity;
+  std::shared_ptr<SideVariable> d_massflux;
+  std::shared_ptr<SideVariable> d_volflux;
+  std::shared_ptr<CellVariable> d_pressure;
+  std::shared_ptr<CellVariable> d_viscosity;
+  std::shared_ptr<CellVariable> d_soundspeed;
+  std::shared_ptr<CellVariable> d_density;
+  std::shared_ptr<CellVariable> d_energy;
+  std::shared_ptr<CellVariable> d_volume;
+
+  std::shared_ptr<CellVariable> d_celldeltas;
+  std::shared_ptr<CellVariable> d_cellcoords;
+
+  std::shared_ptr<NodeVariable> d_vertexdeltas;
+  std::shared_ptr<NodeVariable> d_vertexcoords;
+
+  std::shared_ptr<NodeVariable> d_workarray1;
+  std::shared_ptr<NodeVariable> d_workarray2;
+  std::shared_ptr<NodeVariable> d_workarray3;
+  std::shared_ptr<NodeVariable> d_workarray4;
+  std::shared_ptr<NodeVariable> d_workarray5;
+  std::shared_ptr<NodeVariable> d_workarray6;
+  std::shared_ptr<NodeVariable> d_workarray7;
+
+  std::shared_ptr<IndicatorVariable> d_level_indicator;
+
+  std::shared_ptr<TagVariable> d_tags;
+
+  std::shared_ptr<SAMRAI::hier::VariableContext> d_plot_context;
+
+  const static int g_rectangle = 1;
+  const static int g_circle = 2;
+  const static int g_point = 4;
+
+  const static Real g_small;
+  const static Real g_big;
+
+  static std::shared_ptr<SAMRAI::tbox::Timer> t_fill_boundary;
+
+  static void initializeCallback();
+  static void finalizeCallback();
+
+  static SAMRAI::tbox::StartupShutdownManager::Handler s_initialize_handler;
+};
+} // namespace clever::hydro
+} // namespace clever
+#endif

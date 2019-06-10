@@ -1,0 +1,18 @@
+#!/bin/bash
+./configure -m RelWithDebInfo -p apollo-test -c RAJA
+cd apollo-test/RelWithDebInfo/build/RAJA
+make -j install
+cd ../../../../
+./configure -m RelWithDebInfo -p apollo-test -c Umpire
+cd apollo-test/RelWithDebInfo/build/Umpire
+make -j install
+cd ../../../../
+./configure -m RelWithDebInfo -p apollo-test -c SAMRAI
+cd apollo-test/RelWithDebInfo/build/SAMRAI
+make -j install
+cd ../../../../
+./configure -m RelWithDebInfo -p apollo-test -c cleverleaf
+cd apollo-test/RelWithDebInfo/build/cleverleaf
+make -j install
+cd ../../../../
+
