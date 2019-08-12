@@ -1,1 +1,0 @@
-/usr/tce/packages/gcc/gcc-4.9.3/bin/g++  -fpermissive     -Wall -Wextra  -O2 -g -DNDEBUG  -rdynamic    CMakeFiles/blt_mpi_smoke.dir/blt_mpi_smoke.cpp.o  -o ../../../tests/blt_mpi_smoke -Wl,-rpath,/usr/tce/packages/mvapich2/mvapich2-2.3-gcc-4.9.3/lib /usr/tce/packages/mvapich2/mvapich2-2.3-gcc-4.9.3/lib/libmpicxx.so /usr/tce/packages/mvapich2/mvapich2-2.3-gcc-4.9.3/lib/libmpi.so 

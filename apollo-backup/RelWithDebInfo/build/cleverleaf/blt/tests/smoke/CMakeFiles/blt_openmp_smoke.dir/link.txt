@@ -1,1 +1,0 @@
-/usr/tce/packages/gcc/gcc-4.9.3/bin/g++  -fpermissive     -Wall -Wextra  -O2 -g -DNDEBUG  -rdynamic -fopenmp  CMakeFiles/blt_openmp_smoke.dir/blt_openmp_smoke.cpp.o  -o ../../../tests/blt_openmp_smoke 

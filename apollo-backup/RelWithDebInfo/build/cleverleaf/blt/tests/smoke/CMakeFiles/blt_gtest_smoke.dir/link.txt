@@ -1,1 +1,0 @@
-/usr/tce/packages/gcc/gcc-4.9.3/bin/g++  -fpermissive     -Wall -Wextra  -O2 -g -DNDEBUG  -rdynamic CMakeFiles/blt_gtest_smoke.dir/blt_gtest_smoke.cpp.o  -o ../../../tests/blt_gtest_smoke ../../../lib/libgtest_main.a ../../../lib/libgtest.a -pthread 

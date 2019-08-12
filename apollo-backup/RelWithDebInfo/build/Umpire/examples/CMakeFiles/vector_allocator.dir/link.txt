@@ -1,1 +1,0 @@
-/usr/tce/packages/gcc/gcc-4.9.3/bin/g++       -Wall -Wextra   -Werror  -O2 -g -DNDEBUG   CMakeFiles/vector_allocator.dir/vector_allocator.cpp.o  -o ../bin/examples/vector_allocator ../lib/libumpire.a 

@@ -1,2 +1,0 @@
-/usr/bin/ar qc ../../lib/libcleverleaf_pdat.a  CMakeFiles/cleverleaf_pdat.dir/detail.C.o CMakeFiles/cleverleaf_pdat.dir/NodeInjection.C.o
-/usr/bin/ranlib ../../lib/libcleverleaf_pdat.a

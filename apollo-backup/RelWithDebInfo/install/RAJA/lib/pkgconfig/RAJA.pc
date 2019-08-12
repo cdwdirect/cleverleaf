@@ -1,8 +1,0 @@
-libdir=/g/g17/wood67/src/cleverleaf/apollo-test/RelWithDebInfo/install/RAJA/lib
-includedir=/g/g17/wood67/src/cleverleaf/apollo-test/RelWithDebInfo/install/RAJA/include
-
-Name: RAJA
-Description: RAJA Portability Layer
-Version: 0.7.0
-Libs: -rdynamic ${libdir}/libRAJA.a   -lstdc++ -lm -lgcc_s -lgcc -lc -lgcc_s -lgcc
-Cflags:  -O3 -DNDEBUG      -Wall -Wextra  -std=c++1y -I${includedir}
