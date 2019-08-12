@@ -33,6 +33,22 @@ if (ENABLE_UMPIRE)
     LIBRARIES umpire)
 endif ()
 
+# APOLLO
+if (ENABLE_APOLLO)
+  message(STATUS "Building SAMRAI w/APOLLO Support")
+  find_package(APOLLO REQUIRED)
+  if(APOLLO_FOUND)
+      add_definitions("-DENABLE_APOLLO")
+    blt_register_library(
+      NAME apollo
+      INCLUDES ${APOLLO_INCLUDE_DIRS}
+      LIBRARIES ${APOLLO_LIBRARY})
+      message(STATUS "---- APOLLO:    APOLLO_INCLUDE_DIRS = ${APOLLO_INCLUDE_DIRS}")
+      message(STATUS "---- APOLLO:    APOLLO_LIB_DIRS     = ${APOLLO_LIB_DIRS}")
+      message(STATUS "---- APOLLO:    APOLLO_LIBRARY      = ${APOLLO_LIBRARY}")
+  endif(APOLLO_FOUND)
+endif ()
+
 # RAJA
 if (ENABLE_RAJA)
   if (NOT ENABLE_UMPIRE)

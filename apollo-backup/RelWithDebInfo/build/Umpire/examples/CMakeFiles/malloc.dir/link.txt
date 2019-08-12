@@ -1,0 +1,1 @@
+/usr/tce/packages/gcc/gcc-4.9.3/bin/g++       -Wall -Wextra   -Werror  -O2 -g -DNDEBUG   CMakeFiles/malloc.dir/malloc.cxx.o  -o ../bin/examples/malloc ../lib/libumpire.a 

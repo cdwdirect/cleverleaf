@@ -24,6 +24,8 @@ if(NOT APOLLO_DIR)
     MESSAGE(FATAL_ERROR "Could not find Apollo. Apollo requires explicit APOLLO_DIR.")
 endif()
 
+message("-- APOLLO_DIR is currently set to: ${APOLLO_DIR}")
+
 set(APOLLO_CMAKE_DESC "${APOLLO_DIR}/share/cmake/apollo/apollo.cmake")
 
 if(NOT EXISTS ${APOLLO_CMAKE_DESC})
@@ -36,7 +38,7 @@ endif()
 include(${APOLLO_CMAKE_DESC})
 
 ###############################################################################
-# Set remaining CMake variables 
+# Set remaining CMake variables
 ###############################################################################
 # We found Apollo
 set(APOLLO_FOUND TRUE)

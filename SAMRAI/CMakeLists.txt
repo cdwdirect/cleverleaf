@@ -40,7 +40,7 @@ option(ENABLE_CHECK_ASSERTIONS "Enable assertion checking." Off)
 option(ENABLE_CHECK_DEV_ASSERTIONS "Enable SAMRAI developer assertion checking." Off)
 option(ENABLE_CHECK_DIM_ASSERTIONS "Enable assertion checking for dimensions." Off)
 option(ENABLE_BOX_COUNTING "Turns on box telemetry." Off)
-option(ENABLE_DEPRECATED "Build with deprecated features." On)
+option(ENABLE_DEPRECATED "Build with deprecated features." Off)
 option(ENABLE_TIMERS "Enable SAMRAI timers." Off)
 option(DEBUG_INITIALIZE_UNDEFINED "Initialize new memory to undefined values" Off)
 set(MAXDIM 3 CACHE INT "Maximum allowed dimension")
@@ -52,20 +52,6 @@ include(GNUInstallDirs)
 
 include(blt/SetupBLT.cmake)
 
-if (ENABLE_APOLLO)
-  message(STATUS "Building SAMRAI w/APOLLO Support")
-  find_package(APOLLO REQUIRED)
-  if(APOLLO_FOUND)
-    add_definitions("-DENABLE_APOLLO")
-    blt_register_library(
-      NAME apollo
-      INCLUDES ${APOLLO_INCLUDE_DIRS}
-      LIBRARIES ${APOLLO_LIBRARY})
-      message(STATUS "---- APOLLO:    APOLLO_INCLUDE_DIRS = ${APOLLO_INCLUDE_DIRS}")
-      message(STATUS "---- APOLLO:    APOLLO_LIB_DIRS     = ${APOLLO_LIB_DIRS}")
-      message(STATUS "---- APOLLO:    APOLLO_LIBRARY      = ${APOLLO_LIBRARY}")
-  endif(APOLLO_FOUND)
-endif (ENABLE_APOLLO)
 
 # Set specific options for CUDA if enabled
 if (ENABLE_RAJA AND ENABLE_CUDA)
@@ -92,6 +78,21 @@ if (ENABLE_CUDA)
     message(FATAL_ERROR "CUDA support requires UMPIRE")
   endif ()
 endif ()
+
+#if (ENABLE_APOLLO)
+#  message(STATUS "Building SAMRAI w/APOLLO Support")
+#  find_package(APOLLO REQUIRED)
+#  if(APOLLO_FOUND)
+#      add_definitions("-DENABLE_APOLLO")
+#      blt_register_library(
+#      NAME apollo
+#      INCLUDES ${APOLLO_INCLUDE_DIRS}
+#      LIBRARIES ${APOLLO_LIBRARY})
+#      message(STATUS "---- APOLLO:    APOLLO_INCLUDE_DIRS = ${APOLLO_INCLUDE_DIRS}")
+#      message(STATUS "---- APOLLO:    APOLLO_LIB_DIRS     = ${APOLLO_LIB_DIRS}")
+#      message(STATUS "---- APOLLO:    APOLLO_LIBRARY      = ${APOLLO_LIBRARY}")
+#  endif(APOLLO_FOUND)
+#endif ()
 
 include_directories(${CMAKE_BINARY_DIR}/include)
 

@@ -42,12 +42,22 @@
 
 #ifdef ENABLE_APOLLO
 #include "apollo/Apollo.h"
+#ifndef VERSION
+#define VERSION   "Apollo"
+#endif
 #define APOLLO_TIME(__APOLLO_dbl_var)                                \
     {                                                                \
         struct timeval t;                                            \
         gettimeofday(&t, NULL);                                      \
         __APOLLO_dbl_var = (double)(t.tv_sec + (t.tv_usec * 1e-6));  \
     }
+#endif
+
+#ifndef VERSION
+#define VERSION   "Normal"
+#endif
+#ifndef HOST_NAME
+#define HOST_NAME "localhost"
 #endif
 
 using namespace SAMRAI;
@@ -311,7 +321,7 @@ int main(int argc, char* argv[]) {
     MPI_Barrier(MPI_COMM_WORLD);
     double start = MPI_Wtime();
 
-#ifdef ENABLE_APOLLO 
+#ifdef ENABLE_APOLLO
     double APOLLO_time_before_flush = 0.0;
     double APOLLO_time_after_flush  = 0.0;
     double APOLLO_time_this_step    = 0.0;
@@ -345,9 +355,9 @@ int main(int argc, char* argv[]) {
       APOLLO_TIME(APOLLO_time_after_flush);
       APOLLO_time_this_step = (APOLLO_time_after_flush - APOLLO_time_before_flush);
       APOLLO_time_cumulative += APOLLO_time_this_step;
-#endif
       tbox::pout << "Time to send this step's metrics to Apollo is " \
                          << APOLLO_time_this_step << std::endl;
+#endif
       tbox::pout << "At end of timestep # " << iteration_num - 1 << std::endl;
       tbox::pout << "Simulation time is " << loop_time << std::endl;
       tbox::pout << "++++++++++++++++++++++++++++++++++++++++++++" << std::endl;
@@ -374,8 +384,9 @@ int main(int argc, char* argv[]) {
     double end = MPI_Wtime();
 
     SAMRAI::tbox::pout << "Time elapsed = " << (end - start) << std::endl;
+#ifdef ENABLE_APOLLO
     SAMRAI::tbox::pout << "Time spent flushing data to Apollo = " << APOLLO_time_cumulative << std::endl;
-
+#endif
 
     /*
      * Write final visualization and restart dumps.

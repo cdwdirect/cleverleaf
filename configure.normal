@@ -1,0 +1,216 @@
+#!/usr/bin/env bash
+
+prefix=$(pwd)
+
+clear=false
+mode=RelWithDebInfo
+profile=$(hostname)
+cuda_arch=sm_70
+#
+enable_cuda=OFF
+enable_nvtx=OFF
+enable_omp=ON
+enable_apollo=OFF
+#
+shared=OFF
+cmake_cxx_standard="14"
+blt_cxx_std="c++14"
+
+export CXX=`which g++`
+
+while getopts d:na:hm:cp:rs opt; do
+    case $opt in
+        a)
+            cuda_arch=$OPTARG
+            echo Using CUDA_ARCH = $cuda_arch
+            ;;
+        d)
+            set_dep_install_prefix=$OPTARG
+            ;;
+        h)
+            echo "USAGE: configure OPTIONS"
+            exit 1
+            ;;
+        m)
+            mode=$OPTARG
+            ;;
+        n)
+            enable_cuda=OFF
+            ;;
+        c)
+            clear=true
+            ;;
+        p)
+            profile=$OPTARG
+            ;;
+        r)
+            enable_nvtx=ON
+            ;;
+        s)
+            shared=ON
+            ;;
+        \?)
+            echo "Invalid option: -$OPTARG" >&2
+            exit 1
+            ;;
+    esac
+done
+
+shift $((OPTIND-1))
+pkg=$1
+
+source_prefix=$prefix
+source_dir=$prefix/$pkg
+
+build_prefix=$prefix/$profile/$mode/build
+build_dir=$build_prefix/$pkg
+
+install_prefix=$prefix/$profile/$mode/install
+install_dir=$install_prefix/$pkg
+
+dep_install_prefix=$install_prefix
+
+if [ -n "$set_dep_install_prefix" ]; then
+    dep_install_prefix=$set_dep_install_prefix/install
+fi
+
+echo "-----"
+echo "pkg                =${pkg}"
+echo "profile            =${profile}"
+echo "mode               =${mode}"
+echo "prefix             =${prefix}"
+echo "source_prefix      =${source_prefix}"
+echo "source_dir         =${source_dir}"
+echo "build_prefix       =${build_prefix}"
+echo "build_dir          =${build_dir}"
+echo "install_prefix     =${install_prefix}"
+echo "install_dir        =${install_dir}"
+echo "dep_install_prefix =${dep_install_prefix}"
+echo "enable_omp         =${enable_omp}"
+echo "enable_nvtx        =${enable_nvtx}"
+echo "enable_cuda        =${enable_cuda}"
+echo "enable_apollo      =${enable_apollo}"
+echo "cmake_cxx_standard =${cmake_cxx_standard}"
+echo "blt_cxx_std        =${blt_cxx_std}"
+echo "-----"
+
+if [ "$clear" = true ]; then
+    rm -r $build_dir
+fi
+
+mkdir -p $build_dir
+
+if [ "$pkg" = RAJA ]; then
+    cd $build_dir
+    cmake -Wno-dev \
+          -D BLT_CXX_STD=$blt_cxx_std \
+          -D CMAKE_CXX_STANDARD=$cmake_cxx_standard \
+          -D CMAKE_CXX_COMPILER=$CXX \
+          -D CMAKE_BUILD_TYPE=$mode \
+          -D CMAKE_INSTALL_PREFIX=$install_dir \
+          -D CUDA_ARCH=$cuda_arch \
+          -D BUILD_SHARED_LIBS=$shared \
+          -D APOLLO_DIR=/g/g17/wood67/src/apollo/install \
+          -D ENABLE_APOLLO=$enable_apollo \
+          -D RAJA_ENABLE_OPENMP=$enable_omp \
+          -D ENABLE_OPENMP=$enable_omp \
+          -D ENABLE_CUDA=$enable_cuda \
+          -D ENABLE_TESTS=OFF \
+          -D ENABLE_EXAMPLES=OFF \
+          $source_dir
+elif [ "$pkg" = hdf5 ]; then
+    source_dir=$prefix/hdf5-1.10.3
+    cd $build_dir
+    cmake -Wno-dev \
+          -D BLT_CXX_STD=$blt_cxx_std \
+          -D CMAKE_CXX_STANDARD=$cmake_cxx_standard \
+          -D CMAKE_CXX_COMPILER=$CXX \
+          -D CMAKE_BUILD_TYPE=$mode \
+          -D APOLLO_DIR=/g/g17/wood67/src/apollo/install \
+          -D ENABLE_APOLLO=$enable_apollo \
+          -D RAJA_ENABLE_OPENMP=$enable_omp \
+          -D ENABLE_OPENMP=$enable_omp \
+          -D HDF5_BUILD_TOOLS=OFF \
+          -D HDF5_BUILD_EXAMPLES=OFF \
+          -D CMAKE_INSTALL_PREFIX=$install_dir \
+          $source_dir
+elif [ "$pkg" = Umpire ]; then
+    cd $build_dir
+    cmake -Wno-dev \
+          -D BLT_CXX_STD=$blt_cxx_std \
+          -D CMAKE_CXX_STANDARD=$cmake_cxx_standard \
+          -D CMAKE_CXX_COMPILER=$CXX \
+          -D CMAKE_BUILD_TYPE=$mode \
+          -D CMAKE_INSTALL_PREFIX=$install_dir \
+          -D BUILD_SHARED_LIBS=$shared \
+          -D APOLLO_DIR=/g/g17/wood67/src/apollo/install \
+          -D ENABLE_APOLLO=$enable_apollo \
+          -D RAJA_ENABLE_OPENMP=$enable_omp \
+          -D ENABLE_OPENMP=$enable_omp \
+          -D ENABLE_CUDA=$enable_cuda \
+          -D ENABLE_EXAMPLES=ON \
+          $source_dir
+elif [ "$pkg" = SAMRAI ]; then
+    cd $build_dir
+    export CXXFLAGS=" -fpermissive "
+    cmake -Wno-dev \
+          -D BLT_CXX_STD=$blt_cxx_std \
+          -D CMAKE_CXX_STANDARD=$cmake_cxx_standard \
+          -D CMAKE_CXX_COMPILER=$CXX \
+          -D CMAKE_BUILD_TYPE=$mode \
+          -D CMAKE_INSTALL_PREFIX=$install_dir \
+          -D CMAKE_Fortran_COMPILER=`which gfortran` \
+          -D BUILD_SHARED_LIBS=$shared \
+          -D CUDA_ARCH=$cuda_arch \
+          -D MPI_Fortran_COMPILER=mpifort \
+          -D HDF5_DIR=$dep_install_prefix/hdf5/share/cmake \
+          -D RAJA_DIR=$dep_install_prefix/RAJA/share/raja/cmake \
+          -D umpire_DIR=$dep_install_prefix/Umpire/share/umpire/cmake \
+          -D APOLLO_DIR=/g/g17/wood67/src/apollo/install \
+          -D ENABLE_APOLLO=$enable_apollo \
+          -D OpenMP_lomp_LIBRARY=-lomp \
+          -D OpenMP_Fortran_LIB_NAMES="lomp" \
+          -D OpenMP_Fortran_FLAGS="-fopenmp" \
+          -D RAJA_ENABLE_OPENMP=$enable_omp \
+          -D ENABLE_OPENMP=$enable_omp \
+          -D ENABLE_DOXYGEN=OFF \
+          -D ENABLE_MPI=ON \
+          -D ENABLE_CUDA=$enable_cuda \
+          -D ENABLE_NVTX_REGIONS=$enable_nvtx \
+          -D ENABLE_HDF5=ON \
+          -D ENABLE_RAJA=ON \
+          -D ENABLE_SAMRAI_TIMERS=OFF \
+          -D ENABLE_TIMERS=OFF \
+          -D ENABLE_EXAMPLES=OFF \
+          $source_dir
+elif [ "$pkg" = cleverleaf ]; then
+    cd $build_dir
+    export CXXFLAGS=" -fpermissive "
+    cmake -Wno-dev \
+          -D BLT_CXX_STD=$blt_cxx_std \
+          -D CMAKE_CXX_STANDARD=$cmake_cxx_standard \
+          -D CMAKE_CXX_COMPILER=$CXX \
+          -D CMAKE_BUILD_TYPE=$mode \
+          -D CMAKE_INSTALL_PREFIX=$install_dir \
+          -D CMAKE_CUDA_FLAGS="-arch=$cuda_arch" \
+          -D CMAKE_PREFIX_PATH=$install_prefix/SAMRAI \
+          -D BUILD_SHARED_LIBS=$shared \
+          -D APOLLO_DIR=/g/g17/wood67/src/apollo/install \
+          -D ENABLE_APOLLO=$enable_apollo \
+          -D HDF5_DIR=$dep_install_prefix/hdf5/share/cmake \
+          -D RAJA_DIR=$dep_install_prefix/RAJA/share/raja/cmake \
+          -D umpire_DIR=$dep_install_prefix/Umpire/share/umpire/cmake \
+          -D SAMRAI_DIR=$dep_install_prefix/SAMRAI/share/SAMRAI/cmake \
+          -D ENABLE_CUDA=$enable_cuda \
+          -D ENABLE_MPI=ON \
+          -D ENABLE_OPENMP=$enable_omp \
+          -D RAJA_ENABLE_OPENMP=$enable_omp \
+          $source_dir
+else
+    echo Invalid package: $pkg >&2
+    exit 1
+fi
+
+echo "Build directory: " $build_dir
+echo "Install directory: " $install_dir
+

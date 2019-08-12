@@ -1,0 +1,2 @@
+/usr/bin/ar qc ../../lib/libcleverleaf_hydro.a  CMakeFiles/cleverleaf_hydro.dir/LagrangianEulerianIntegrator.C.o CMakeFiles/cleverleaf_hydro.dir/LagrangianEulerianLevelIntegrator.C.o CMakeFiles/cleverleaf_hydro.dir/LagrangianEulerianPatchStrategy.C.o CMakeFiles/cleverleaf_hydro.dir/Cleverleaf.C.o
+/usr/bin/ranlib ../../lib/libcleverleaf_hydro.a

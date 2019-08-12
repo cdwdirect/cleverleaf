@@ -1,0 +1,36 @@
+#IncludeRegexLine: ^[ 	]*[#%][ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+/g/g17/wood67/src/cleverleaf/cleverleaf/blt/tests/smoke/blt_mpi_smoke.cpp
+mpi.h
+-
+iostream
+-
+fstream
+-
+
+/usr/tce/packages/mvapich2/mvapich2-2.3-gcc-4.9.3/include/mpi.h
+stddef.h
+-
+cstdint
+-
+stdint.h
+-
+mpio.h
+/usr/tce/packages/mvapich2/mvapich2-2.3-gcc-4.9.3/include/mpio.h
+mpicxx.h
+/usr/tce/packages/mvapich2/mvapich2-2.3-gcc-4.9.3/include/mpicxx.h
+
+/usr/tce/packages/mvapich2/mvapich2-2.3-gcc-4.9.3/include/mpicxx.h
+stdio.h
+-
+
+/usr/tce/packages/mvapich2/mvapich2-2.3-gcc-4.9.3/include/mpio.h
+mpi.h
+/usr/tce/packages/mvapich2/mvapich2-2.3-gcc-4.9.3/include/mpi.h
+
