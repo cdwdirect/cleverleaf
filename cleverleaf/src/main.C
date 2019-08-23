@@ -136,14 +136,16 @@ int main(int argc, char* argv[]) {
 
     tbox::pout << "CleverLeaf version " << VERSION
                << " compiled on " << HOST_NAME << std::endl;
-    tbox::pout << "Running with " << mpi.getSize() << " tasks";
-// #if defined(_OPENMP)
-// #pragma omp parallel
-//     {
-// #pragma omp master
-//       { tbox::pout << " and " << omp_get_num_threads() << " threads"; }
-//     }
-// #endif
+    tbox::pout << "Running with " << mpi.getSize() << " tasks" << std::endl;
+#if defined(_OPENMP)
+#pragma omp parallel
+    {
+#pragma omp master
+      { tbox::pout << " and " << omp_get_num_threads() << " of ";
+          tbox::pout << omp_get_max_threads() << " threads";
+      }
+    }
+#endif
     tbox::pout << std::endl;
 
     tbox::plog << "Reading input from: " << input_path << std::endl;
@@ -329,63 +331,87 @@ int main(int argc, char* argv[]) {
     Apollo *apollo = Apollo::instance();
 #endif
 
+    Real loop_time_start = loop_time;
+    Real loop_time_stop  = loop_time;
+
+    double step_exec_start = 0.0;
+    double step_exec_total = 0.0;
+
+    tbox::pout << "CSV begin";
+    tbox::pout << "build, step, step_exec_time, sim_time_start, sim_time_done, current_dt, apollo_xmit_time" << std::endl;
+
     while ((loop_time < loop_time_end) &&
            lagrangian_eulerian_integrator->stepsRemaining()) {
 
-      int iteration_num = lagrangian_eulerian_integrator->getIntegratorStep()+1;
+      step_exec_start = MPI_Wtime();
+      loop_time_start = loop_time;
 
-      tbox::pout << "++++++++++++++++++++++++++++++++++++++++++++" << std::endl;
-      tbox::pout << "At begining of timestep # " << iteration_num-1 << std::endl;
-      tbox::pout << "Simulation time is " << loop_time << std::endl;
-      tbox::pout << "Current dt is " << dt_now << std::endl;
+      int iteration_num = lagrangian_eulerian_integrator->getIntegratorStep()+1;
 
       Real dt_new = lagrangian_eulerian_integrator->advanceHierarchy(dt_now);
 
       loop_time += dt_now;
       dt_now = dt_new;
 
+      loop_time_stop = loop_time;
+
       if ((field_summary_interval > 0)
           && (iteration_num % field_summary_interval) == 0) {
         lagrangian_eulerian_integrator->printFieldSummary();
       }
 
+      step_exec_total = MPI_Wtime() - step_exec_start;
+
 #ifdef ENABLE_APOLLO
       APOLLO_TIME(APOLLO_time_before_flush);
+
+      // TODO: Explore the round-robin'ing of who is sending data in...
+      //       (various ways of determining how often we send, to not send every timestep.)
       apollo->flushAllRegionMeasurements(iteration_num);
+
       APOLLO_TIME(APOLLO_time_after_flush);
       APOLLO_time_this_step = (APOLLO_time_after_flush - APOLLO_time_before_flush);
       APOLLO_time_cumulative += APOLLO_time_this_step;
-      tbox::pout << "Time to send this step's metrics to Apollo is " \
-                         << APOLLO_time_this_step << std::endl;
+      tbox::pout << "APOLLO" \
+          << ", " << (iteration_num - 1) \
+          << ", " << step_exec_total \
+          << ", " << loop_time_start \
+          << ", " << loop_time_stop \
+          << ", " << dt_now \
+          << ", " << APOLLO_time_this_step \
+          << std::endl;
+#else
+      tbox::pout << "NORMAL" \
+          << ", " << (iteration_num - 1) \
+          << ", " << step_exec_total \
+          << ", " << loop_time_start \
+          << ", " << loop_time_stop \
+          << ", " << dt_now \
+          << ", 0.0" << std::endl;
 #endif
-      tbox::pout << "At end of timestep # " << iteration_num - 1 << std::endl;
-      tbox::pout << "Simulation time is " << loop_time << std::endl;
-      tbox::pout << "++++++++++++++++++++++++++++++++++++++++++++" << std::endl;
 
+      if ((vis_dump_interval > 0) && (iteration_num % vis_dump_interval) == 0) {
+        tbox::pout << "== CLEVERLEAF: Dumping vis data..." << std::endl;
+        visit_data_writer->writePlotData(
+          patch_hierarchy,
+          iteration_num,
+          loop_time);
+      }
 
-      //NOTE: Removed to minimize perturbation during runs due to lustre.
-      //            -Chad
-      //
-      //if ((vis_dump_interval > 0) && (iteration_num % vis_dump_interval) == 0) {
-      //  visit_data_writer->writePlotData(
-      //    patch_hierarchy,
-      //    iteration_num,
-      //    loop_time);
-      //}
-
-      //if ((restart_interval > 0) && (iteration_num % restart_interval) == 0) {
-      //  tbox::RestartManager::getManager()->
-      //    writeRestartFile(restart_write_dirname,
-      //                     iteration_num);
-      //}
+      if ((restart_interval > 0) && (iteration_num % restart_interval) == 0) {
+        tbox::pout << "== CLEVERLEAF: Dumping restart file..." << std::endl;
+        tbox::RestartManager::getManager()->
+          writeRestartFile(restart_write_dirname,
+                           iteration_num);
+      }
     }
 
     MPI_Barrier(MPI_COMM_WORLD);
     double end = MPI_Wtime();
-
-    SAMRAI::tbox::pout << "Time elapsed = " << (end - start) << std::endl;
+    SAMRAI::tbox::pout << "CSV end";
+    SAMRAI::tbox::pout << "== CLEVERLEAF: Total time elapsed = " << (end - start) << std::endl;
 #ifdef ENABLE_APOLLO
-    SAMRAI::tbox::pout << "Time spent flushing data to Apollo = " << APOLLO_time_cumulative << std::endl;
+    SAMRAI::tbox::pout << "== CLEVERLEAF: Total time spent flushing data to Apollo = " << APOLLO_time_cumulative << std::endl;
 #endif
 
     /*
