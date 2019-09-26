@@ -8,6 +8,7 @@ set(cleverleaf_depends ${SAMRAI_LIBRARIES} cleverleaf_pdat cleverleaf_geom cleve
 
 if (ENABLE_APOLLO)
   set(cleverleaf_depends ${cleverleaf_depends} apollo)
+  set(cleverleaf_depends ${cleverleaf_depends} callpath)
 endif ()
 
 if (ENABLE_OPENMP)

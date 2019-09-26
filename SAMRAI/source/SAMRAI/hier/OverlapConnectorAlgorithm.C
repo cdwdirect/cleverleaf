@@ -222,7 +222,7 @@ OverlapConnectorAlgorithm::extractNeighbors(
                grid_geom,
                connector.getBase().getRefinementRatio(),
                connector.getRatio(),
-               width, 
+               width,
                head_is_finer,
                base_is_finer);
          }
@@ -1496,12 +1496,14 @@ OverlapConnectorAlgorithm::privateBridge_discoverAndSend(
    std::vector<int> another_outgoing_ranks(outgoing_ranks.size());
    for (std::set<int>::const_iterator outgoing_ranks_itr(outgoing_ranks.begin());
         outgoing_ranks_itr != outgoing_ranks.end(); ++outgoing_ranks_itr) {
-      another_outgoing_ranks[i++] = *outgoing_ranks_itr;
+another_outgoing_ranks[i++] = *outgoing_ranks_itr;
    }
 #ifdef HAVE_OPENMP
-#pragma omp parallel private(i) num_threads(4)
+// Chad:
+//#pragma omp parallel private(i) num_threads(4)
    {
-#pragma omp for schedule(dynamic) nowait
+// Chad:
+//#pragma omp for schedule(dynamic) nowait
 #endif
    for (i = 0; i < imax; ++i) {
       BoxId outgoing_proc_start_id(
@@ -1759,7 +1761,7 @@ OverlapConnectorAlgorithm::privateBridge_findOverlapsForOneProcess(
    const IntVector& head_refinement_ratio(
       bridging_connector.getHead().getRefinementRatio());
 
-   const BaseGridGeometry& grid_geom = 
+   const BaseGridGeometry& grid_geom =
       *bridging_connector.getBase().getGridGeometry();
 
    bool refine_base = false;
@@ -1784,7 +1786,7 @@ OverlapConnectorAlgorithm::privateBridge_findOverlapsForOneProcess(
 #endif
 
    const PeriodicShiftCatalog& shift_catalog =
-      bridging_connector.getHead().getGridGeometry()->getPeriodicShiftCatalog(); 
+      bridging_connector.getHead().getGridGeometry()->getPeriodicShiftCatalog();
    // Should be made a member to avoid repetitive alloc/dealloc.
    // Reserve in privateBridge and used here.
    BoxContainer found_nabrs, scratch_found_nabrs;

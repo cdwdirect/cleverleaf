@@ -2,7 +2,7 @@
 
 prefix=$(pwd)
 
-clear=false
+clear_build_dir=true
 mode=RelWithDebInfo
 profile=$(hostname)
 cuda_arch=sm_70
@@ -38,7 +38,7 @@ while getopts d:na:hm:cp:rs opt; do
             enable_cuda=OFF
             ;;
         c)
-            clear=true
+            clear_build_dir=true
             ;;
         p)
             profile=$OPTARG
@@ -94,7 +94,7 @@ echo "cmake_cxx_standard =${cmake_cxx_standard}"
 echo "blt_cxx_std        =${blt_cxx_std}"
 echo "-----"
 
-if [ "$clear" = true ]; then
+if [ "$clear_build_dir" = true ]; then
     rm -r $build_dir
 fi
 
@@ -110,6 +110,7 @@ if [ "$pkg" = RAJA ]; then
           -D CMAKE_INSTALL_PREFIX=$install_dir \
           -D CUDA_ARCH=$cuda_arch \
           -D BUILD_SHARED_LIBS=$shared \
+          -D callpath_DIR=/g/g17/wood67/src/callpath/install/share/cmake/callpath \
           -D APOLLO_DIR=/g/g17/wood67/src/apollo/install \
           -D ENABLE_APOLLO=$enable_apollo \
           -D RAJA_ENABLE_OPENMP=$enable_omp \
@@ -166,6 +167,7 @@ elif [ "$pkg" = SAMRAI ]; then
           -D HDF5_DIR=$dep_install_prefix/hdf5/share/cmake \
           -D RAJA_DIR=$dep_install_prefix/RAJA/share/raja/cmake \
           -D umpire_DIR=$dep_install_prefix/Umpire/share/umpire/cmake \
+          -D callpath_DIR=/g/g17/wood67/src/callpath/install/share/cmake/callpath \
           -D APOLLO_DIR=/g/g17/wood67/src/apollo/install \
           -D ENABLE_APOLLO=$enable_apollo \
           -D OpenMP_lomp_LIBRARY=-lomp \
@@ -195,6 +197,7 @@ elif [ "$pkg" = cleverleaf ]; then
           -D CMAKE_CUDA_FLAGS="-arch=$cuda_arch" \
           -D CMAKE_PREFIX_PATH=$install_prefix/SAMRAI \
           -D BUILD_SHARED_LIBS=$shared \
+          -D callpath_DIR=/g/g17/wood67/src/callpath/install/share/cmake/callpath \
           -D APOLLO_DIR=/g/g17/wood67/src/apollo/install \
           -D ENABLE_APOLLO=$enable_apollo \
           -D HDF5_DIR=$dep_install_prefix/hdf5/share/cmake \

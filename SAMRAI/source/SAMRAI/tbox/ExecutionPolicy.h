@@ -119,43 +119,46 @@ struct policy_traits<policy::parallel> {
    using Policy = RAJA::loop_exec;
 
    using Policy1d = RAJA::KernelPolicy<
-#if defined(_OPENMP)
        RAJA::statement::For<0, RAJA::omp_parallel_for_exec,
-#else
-       RAJA::statement::For<0, RAJA::loop_exec,
-#endif
          RAJA::statement::Lambda<0>
       >
    >;
 
-   using Policy2d = RAJA::KernelPolicy<
+       //RAJA::statement::Collapse<RAJA::omp_parallel_collapse_exec,
+       //                          RAJA::Arglist<1, 0>, // row, col
+
 #ifdef ENABLE_APOLLO
+   using Policy2d = RAJA::KernelPolicy<
        RAJA::statement::For<1, RAJA::apollo_exec,
          RAJA::statement::For<0, RAJA::loop_exec,
-#else
-#if defined(_OPENMP)
-       RAJA::statement::Collapse<RAJA::omp_parallel_collapse_exec,
-                                 RAJA::Arglist<1, 0>, // row, col
-#else
-       RAJA::statement::For<1, RAJA::loop_exec,
-         RAJA::statement::For<0, RAJA::loop_exec,
-#endif
-#endif
             RAJA::statement::Lambda<0>
          >
       >
    >;
+#else
+   using Policy2d = RAJA::KernelPolicy<
+       RAJA::statement::For<1, RAJA::omp_parallel_for_exec,
+         RAJA::statement::For<0, RAJA::loop_exec,
+            RAJA::statement::Lambda<0>
+         >
+      >
+   >;
+#endif
+
+       // RAJA::statement::Collapse<RAJA:omp_parallel_collapse_exec,
+       //                           RAJA::ArgList<2, 1, 0>,
+       //     RAJA::statement::Lambda<0>,
+       //     RAJA::statement::For<2, RAJA::loop_exec,
+       //       RAJA::statement::Lambda<1>
+       //     >,
+       //     RAJA::statement::Lambda<2>
+       // >
 
    using Policy3d = RAJA::KernelPolicy<
-#if defined(_OPENMP)
-       RAJA::statement::Collapse<RAJA:omp_parallel_collapse_exec,
-                                 RAJA::ArgList<2, 1, 0>,
-#else
-       RAJA::statement::For<2, RAJA::loop_exec,
+       RAJA::statement::For<2, RAJA::omp_parallel_for_exec,
          RAJA::statement::For<1, RAJA::loop_exec,
             RAJA::statement::For<0, RAJA::loop_exec,
-#endif
-               RAJA::statement::Lambda<0>
+                RAJA::statement::Lambda<0>
             >
          >
       >

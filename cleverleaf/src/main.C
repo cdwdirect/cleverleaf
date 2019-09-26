@@ -337,7 +337,7 @@ int main(int argc, char* argv[]) {
     double step_exec_start = 0.0;
     double step_exec_total = 0.0;
 
-    tbox::pout << "CSV begin";
+    //tbox::pout << "CSV begin >>>>>" << std::endl;
     tbox::pout << "build, step, step_exec_time, sim_time_start, sim_time_done, current_dt, apollo_xmit_time" << std::endl;
 
     while ((loop_time < loop_time_end) &&
@@ -382,6 +382,8 @@ int main(int argc, char* argv[]) {
           << std::endl;
 #else
       tbox::pout << "NORMAL" \
+          << ", " << getenv("OMP_NUM_THREADS") \
+          << ", " << getenv("OMP_SCHEDULE") \
           << ", " << (iteration_num - 1) \
           << ", " << step_exec_total \
           << ", " << loop_time_start \
@@ -408,7 +410,7 @@ int main(int argc, char* argv[]) {
 
     MPI_Barrier(MPI_COMM_WORLD);
     double end = MPI_Wtime();
-    SAMRAI::tbox::pout << "CSV end";
+    SAMRAI::tbox::pout << "<<<<< CSV end" << std::endl;
     SAMRAI::tbox::pout << "== CLEVERLEAF: Total time elapsed = " << (end - start) << std::endl;
 #ifdef ENABLE_APOLLO
     SAMRAI::tbox::pout << "== CLEVERLEAF: Total time spent flushing data to Apollo = " << APOLLO_time_cumulative << std::endl;
