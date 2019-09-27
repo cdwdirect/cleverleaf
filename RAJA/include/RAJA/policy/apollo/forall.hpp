@@ -83,8 +83,8 @@ namespace apollo
 //
 
 #ifndef RAJA_ENABLE_OPENMP
-#error *** RAJA_ENABLE_OPENMP isn't defined! \
-    This build of RAJA requires OpenMP to be enabled! ***
+#error "*** RAJA_ENABLE_OPENMP is not defined!" \
+    "This build of RAJA requires OpenMP to be enabled! ***"
 #endif
 
 using apolloPolicySeq      = RAJA::seq_exec;
@@ -105,6 +105,8 @@ using apolloPolicyOpenMP   = RAJA::omp_parallel_for_exec;
 #else
 #define APOLLO_OMP_EXEC(__threads, __sched, __chunksize, __body) \
 {                                                           \
+    omp_set_num_threads(__threads);                     \
+    omp_set_schedule(__sched, __chunksize);             \
     __body(apolloPolicyOpenMP{});                           \
 };
 #endif
