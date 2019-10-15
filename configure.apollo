@@ -3,7 +3,7 @@
 prefix=$(pwd)
 
 clear_build_dir=true
-mode=RelWithDebInfo
+mode=Release
 profile=$(hostname)
 cuda_arch=sm_70
 #
@@ -16,6 +16,7 @@ shared=OFF
 cmake_cxx_standard="14"
 blt_cxx_std="c++14"
 
+export CC=`which gcc`
 export CXX=`which g++`
 
 while getopts d:na:hm:cp:rs opt; do
@@ -113,6 +114,7 @@ if [ "$pkg" = RAJA ]; then
           -D callpath_DIR=/g/g17/wood67/src/callpath/install/share/cmake/callpath \
           -D APOLLO_DIR=/g/g17/wood67/src/apollo/install \
           -D ENABLE_APOLLO=$enable_apollo \
+          -D LLVM_OMP_PATH=/g/g17/wood67/src/openmp/final/install \
           -D RAJA_ENABLE_OPENMP=$enable_omp \
           -D ENABLE_OPENMP=$enable_omp \
           -D ENABLE_CUDA=$enable_cuda \
@@ -130,6 +132,7 @@ elif [ "$pkg" = hdf5 ]; then
           -D APOLLO_DIR=/g/g17/wood67/src/apollo/install \
           -D ENABLE_APOLLO=$enable_apollo \
           -D RAJA_ENABLE_OPENMP=$enable_omp \
+          -D LLVM_OMP_PATH=/g/g17/wood67/src/openmp/final/install \
           -D ENABLE_OPENMP=$enable_omp \
           -D HDF5_BUILD_TOOLS=OFF \
           -D HDF5_BUILD_EXAMPLES=OFF \
@@ -146,6 +149,7 @@ elif [ "$pkg" = Umpire ]; then
           -D BUILD_SHARED_LIBS=$shared \
           -D APOLLO_DIR=/g/g17/wood67/src/apollo/install \
           -D ENABLE_APOLLO=$enable_apollo \
+          -D LLVM_OMP_PATH=/g/g17/wood67/src/openmp/final/install \
           -D RAJA_ENABLE_OPENMP=$enable_omp \
           -D ENABLE_OPENMP=$enable_omp \
           -D ENABLE_CUDA=$enable_cuda \
@@ -170,6 +174,7 @@ elif [ "$pkg" = SAMRAI ]; then
           -D callpath_DIR=/g/g17/wood67/src/callpath/install/share/cmake/callpath \
           -D APOLLO_DIR=/g/g17/wood67/src/apollo/install \
           -D ENABLE_APOLLO=$enable_apollo \
+          -D LLVM_OMP_PATH=/g/g17/wood67/src/openmp/final/install \
           -D OpenMP_lomp_LIBRARY=-lomp \
           -D OpenMP_Fortran_LIB_NAMES="lomp" \
           -D OpenMP_Fortran_FLAGS="-fopenmp" \
@@ -206,6 +211,7 @@ elif [ "$pkg" = cleverleaf ]; then
           -D SAMRAI_DIR=$dep_install_prefix/SAMRAI/share/SAMRAI/cmake \
           -D ENABLE_CUDA=$enable_cuda \
           -D ENABLE_MPI=ON \
+          -D LLVM_OMP_PATH=/g/g17/wood67/src/openmp/final/install \
           -D ENABLE_OPENMP=$enable_omp \
           -D RAJA_ENABLE_OPENMP=$enable_omp \
           $source_dir

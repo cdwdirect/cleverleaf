@@ -1,29 +1,33 @@
 #!/bin/bash
 if [ "x$1" == "x" ] ; then
-    echo "USAGE: ./go.hard <apollo | normal>"
+    echo "USAGE: ./go.hard <apollo | normal> <Release | RelWithDebInfo>"
+    kill -INT $$
+fi
+if [ "x$2" == "x" ] ; then
+    echo "USAGE: ./go.hard <apollo | normal> <Release | RelWithDebInfo>"
     kill -INT $$
 fi
 #
-./configure.$1 -m RelWithDebInfo -p package-$1 -c RAJA
-cd package-$1/RelWithDebInfo/build/RAJA
+./configure.$1 -m $2 -p package-$1 -c RAJA
+cd package-$1/$2/build/RAJA
 make -j install
 cd ../../../../
 #
-./configure.$1 -m RelWithDebInfo -p package-$1 -c Umpire
-cd package-$1/RelWithDebInfo/build/Umpire
+./configure.$1 -m $2 -p package-$1 -c Umpire
+cd package-$1/$2/build/Umpire
 make -j install
 cd ../../../../
 #
-./configure.$1 -m RelWithDebInfo -p package-$1 -c SAMRAI
-cd package-$1/RelWithDebInfo/build/SAMRAI
+./configure.$1 -m $2 -p package-$1 -c SAMRAI
+cd package-$1/$2/build/SAMRAI
 make -j install
 cd ../../../../
 #
-./configure.$1 -m RelWithDebInfo -p package-$1 -c cleverleaf
-cd package-$1/RelWithDebInfo/build/cleverleaf
+./configure.$1 -m $2 -p package-$1 -c cleverleaf
+cd package-$1/$2/build/cleverleaf
 make -j install
 cd ../../../../
 #
-echo "== CleverLeaf './go.hard $1' script is finished."
-echo "== Binaries should be available in: ./package-$1/RelWithDebInfo/install"
+echo "== CleverLeaf './go.hard $1 $2' script is finished."
+echo "== Binaries should be available in: ./package-$1/$2/install"
 echo ""

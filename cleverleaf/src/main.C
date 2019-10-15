@@ -134,19 +134,19 @@ int main(int argc, char* argv[]) {
       return 1;
     }
 
-    tbox::pout << "CleverLeaf version " << VERSION
-               << " compiled on " << HOST_NAME << std::endl;
-    tbox::pout << "Running with " << mpi.getSize() << " tasks" << std::endl;
-#if defined(_OPENMP)
-#pragma omp parallel
-    {
-#pragma omp master
-      { tbox::pout << " and " << omp_get_num_threads() << " of ";
-          tbox::pout << omp_get_max_threads() << " threads";
-      }
-    }
-#endif
-    tbox::pout << std::endl;
+    //tbox::pout << "CleverLeaf version " << VERSION
+    //           << " compiled on " << HOST_NAME << std::endl;
+    //tbox::pout << "Running with " << mpi.getSize() << " tasks" << std::endl;
+//#if defined(_OPENMP)
+//#pragma omp parallel
+//    {
+//#pragma omp master
+//      { tbox::pout << " and " << omp_get_num_threads() << " of ";
+//          tbox::pout << omp_get_max_threads() << " threads";
+//      }
+//    }
+//#endif
+//    tbox::pout << std::endl;
 
     tbox::plog << "Reading input from: " << input_path << std::endl;
 
@@ -338,8 +338,11 @@ int main(int argc, char* argv[]) {
     double step_exec_total = 0.0;
 
     //tbox::pout << "CSV begin >>>>>" << std::endl;
-    tbox::pout << "build, step, step_exec_time, sim_time_start, sim_time_done, current_dt, apollo_xmit_time" << std::endl;
-
+#ifdef ENABLE_APOLLO
+    //tbox::pout << "build, policy_index, schedule, step, step_exec_time, sim_time_start, sim_time_done, current_dt, apollo_xmit_time" << std::endl;
+#else
+    tbox::pout << "build, policy_index, schedule, step, step_exec_time, sim_time_start, sim_time_done, current_dt, apollo_xmit_time" << std::endl;
+#endif
     while ((loop_time < loop_time_end) &&
            lagrangian_eulerian_integrator->stepsRemaining()) {
 
@@ -372,7 +375,9 @@ int main(int argc, char* argv[]) {
       APOLLO_TIME(APOLLO_time_after_flush);
       APOLLO_time_this_step = (APOLLO_time_after_flush - APOLLO_time_before_flush);
       APOLLO_time_cumulative += APOLLO_time_this_step;
-      tbox::pout << "APOLLO" \
+      //tbox::pout << "APOLLO" \
+          << ", " << getenv("APOLLO_POLICY_INDEX") \
+          << ", apollo" \
           << ", " << (iteration_num - 1) \
           << ", " << step_exec_total \
           << ", " << loop_time_start \
@@ -410,10 +415,10 @@ int main(int argc, char* argv[]) {
 
     MPI_Barrier(MPI_COMM_WORLD);
     double end = MPI_Wtime();
-    SAMRAI::tbox::pout << "<<<<< CSV end" << std::endl;
-    SAMRAI::tbox::pout << "== CLEVERLEAF: Total time elapsed = " << (end - start) << std::endl;
+    //SAMRAI::tbox::pout << "<<<<< CSV end" << std::endl;
+    //SAMRAI::tbox::pout << "== CLEVERLEAF: Total time elapsed = " << (end - start) << std::endl;
 #ifdef ENABLE_APOLLO
-    SAMRAI::tbox::pout << "== CLEVERLEAF: Total time spent flushing data to Apollo = " << APOLLO_time_cumulative << std::endl;
+    //SAMRAI::tbox::pout << "== CLEVERLEAF: Total time spent flushing data to Apollo = " << APOLLO_time_cumulative << std::endl;
 #endif
 
     /*

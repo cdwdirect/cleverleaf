@@ -3,7 +3,7 @@
 prefix=$(pwd)
 
 clear=false
-mode=RelWithDebInfo
+mode=Release
 profile=$(hostname)
 cuda_arch=sm_70
 #

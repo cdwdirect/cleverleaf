@@ -92,36 +92,32 @@ using apolloPolicySIMD     = RAJA::simd_exec;
 using apolloPolicyLoopExec = RAJA::loop_exec;
 using apolloPolicyOpenMP   = RAJA::omp_parallel_for_exec;
 
-#if(0)
 #define APOLLO_OMP_EXEC(__threads, __sched, __chunksize, __body) \
-{                                                           \
-    if (new_policy != old_policy) {                         \
-        omp_set_num_threads(__threads);                     \
-        omp_set_schedule(__sched, __chunksize);             \
-        apollo->setFeature("num_threads", (double) __threads); \
-    }                                                       \
-    __body(apolloPolicyOpenMP{});                           \
+{                                                                \
+    apollo->setFeature("num_threads", (double) __threads);                \
+    omp_set_num_threads(__threads);                              \
+    omp_set_schedule(__sched, __chunksize);                      \
+    __body(apolloPolicyOpenMP{});                                \
 };
-#else
-#define APOLLO_OMP_EXEC(__threads, __sched, __chunksize, __body) \
-{                                                           \
-    omp_set_num_threads(__threads);                     \
-    omp_set_schedule(__sched, __chunksize);             \
-    __body(apolloPolicyOpenMP{});                           \
-};
-#endif
 
 template <typename BODY>
-RAJA_INLINE void apolloPolicySwitcher(int new_policy, int old_policy, int tc[], BODY body) {
+RAJA_INLINE void apolloPolicySwitcher(int policy, int tc[], BODY body) {
     static Apollo *apollo = Apollo::instance();
-    switch(new_policy) {
+    switch(policy) {
         case   0: // The 0th policy is always a "safe" choice in Apollo as a
                   // default, or fail-safe when models are broken or partial..
                   // In the case of this OpenMP exploration template, the
                   // 0'th policy uses whatever was already set by the previous
                   // Apollo::Region's model, or the system defaults, if it is
                   // the first loop to get executed.
-                  body(apolloPolicyOpenMP{});
+                  // NOTE: We DO want to set this, so that models which are
+                  //       recommending it will (hopefully) get the same settings
+                  //       used in the training, if policy zero got recommended.
+                  // NOTE: It is not advised for policy 0 to be used in
+                  //       exhaustive searches when building models.
+                  APOLLO_OMP_EXEC(apollo->ompDefaultNumThreads,
+                                  apollo->ompDefaultSchedule,
+                                  -1, body);
                   break;
         case   1: // The 1st policy is a Sequential option, which will come into
                   // play for iterations when the number of elements a loop is
@@ -131,37 +127,32 @@ RAJA_INLINE void apolloPolicySwitcher(int new_policy, int old_policy, int tc[], 
                   // available, but the learned model will be able to make
                   // more significant performance improvements for applications
                   // with ocassional sparse inputs to loops.
+                  apollo->setFeature("num_threads", 1.0);
                   body(apolloPolicySeq{});
                   break;
-        case   2: APOLLO_OMP_EXEC( tc[0],     omp_sched_auto, -1, body); break;
-        case   3: APOLLO_OMP_EXEC( tc[1],     omp_sched_auto, -1, body); break;
-        case   4: APOLLO_OMP_EXEC( tc[2],     omp_sched_auto, -1, body); break;
-        case   5: APOLLO_OMP_EXEC( tc[3],     omp_sched_auto, -1, body); break;
-        case   6: APOLLO_OMP_EXEC( tc[4],     omp_sched_auto, -1, body); break;
-        case   7: APOLLO_OMP_EXEC( tc[5],     omp_sched_auto, -1, body); break;
-        case   8: APOLLO_OMP_EXEC( tc[0],   omp_sched_static, -1, body); break;
-        case   9: APOLLO_OMP_EXEC( tc[1],   omp_sched_static, -1, body); break;
-        case  10: APOLLO_OMP_EXEC( tc[2],   omp_sched_static, -1, body); break;
-        case  11: APOLLO_OMP_EXEC( tc[3],   omp_sched_static, -1, body); break;
-        case  12: APOLLO_OMP_EXEC( tc[4],   omp_sched_static, -1, body); break;
-        case  13: APOLLO_OMP_EXEC( tc[5],   omp_sched_static, -1, body); break;
-        case  14: APOLLO_OMP_EXEC( tc[0],  omp_sched_dynamic, -1, body); break;
-        case  15: APOLLO_OMP_EXEC( tc[1],  omp_sched_dynamic, -1, body); break;
-        case  16: APOLLO_OMP_EXEC( tc[2],  omp_sched_dynamic, -1, body); break;
-        case  17: APOLLO_OMP_EXEC( tc[3],  omp_sched_dynamic, -1, body); break;
-        case  18: APOLLO_OMP_EXEC( tc[4],  omp_sched_dynamic, -1, body); break;
-        case  19: APOLLO_OMP_EXEC( tc[5],  omp_sched_dynamic, -1, body); break;
-        case  20: APOLLO_OMP_EXEC( tc[0],   omp_sched_guided, -1, body); break;
-        case  21: APOLLO_OMP_EXEC( tc[1],   omp_sched_guided, -1, body); break;
-        case  22: APOLLO_OMP_EXEC( tc[2],   omp_sched_guided, -1, body); break;
-        case  23: APOLLO_OMP_EXEC( tc[3],   omp_sched_guided, -1, body); break;
-        case  24: APOLLO_OMP_EXEC( tc[4],   omp_sched_guided, -1, body); break;
-        case  25: APOLLO_OMP_EXEC( tc[5],   omp_sched_guided, -1, body); break;
+        case   2: APOLLO_OMP_EXEC( tc[0],   omp_sched_static, -1, body); break;
+        case   3: APOLLO_OMP_EXEC( tc[1],   omp_sched_static, -1, body); break;
+        case   4: APOLLO_OMP_EXEC( tc[2],   omp_sched_static, -1, body); break;
+        case   5: APOLLO_OMP_EXEC( tc[3],   omp_sched_static, -1, body); break;
+        case   6: APOLLO_OMP_EXEC( tc[4],   omp_sched_static, -1, body); break;
+        case   7: APOLLO_OMP_EXEC( tc[5],   omp_sched_static, -1, body); break;
+        case   8: APOLLO_OMP_EXEC( tc[0],  omp_sched_dynamic, -1, body); break;
+        case   9: APOLLO_OMP_EXEC( tc[1],  omp_sched_dynamic, -1, body); break;
+        case  10: APOLLO_OMP_EXEC( tc[2],  omp_sched_dynamic, -1, body); break;
+        case  11: APOLLO_OMP_EXEC( tc[3],  omp_sched_dynamic, -1, body); break;
+        case  12: APOLLO_OMP_EXEC( tc[4],  omp_sched_dynamic, -1, body); break;
+        case  13: APOLLO_OMP_EXEC( tc[5],  omp_sched_dynamic, -1, body); break;
+        case  14: APOLLO_OMP_EXEC( tc[0],   omp_sched_guided, -1, body); break;
+        case  15: APOLLO_OMP_EXEC( tc[1],   omp_sched_guided, -1, body); break;
+        case  16: APOLLO_OMP_EXEC( tc[2],   omp_sched_guided, -1, body); break;
+        case  17: APOLLO_OMP_EXEC( tc[3],   omp_sched_guided, -1, body); break;
+        case  18: APOLLO_OMP_EXEC( tc[4],   omp_sched_guided, -1, body); break;
+        case  19: APOLLO_OMP_EXEC( tc[5],   omp_sched_guided, -1, body); break;
     }
     return;
 }
 
-const int POLICY_COUNT = 26;
+const int POLICY_COUNT = 20;
 
 //
 // ///////////////////// Classic template ///////////////////////
@@ -207,23 +198,42 @@ const int POLICY_COUNT = 26;
 //     }
 // }
 
+    // TODO: [SOS] Allow messages to be sent to specific ranks only
+    // TODO: [CONTROLLER]
+    //       New magic word: __ANY_REGION__ --> __NEW_REGION__ that will only
+    //       assign a policy to regions that have not been directly targeted
+    //       before. i.e. "Only regions using the default/generic policy."
+    //       That way we don't overwrite a region that is using a specific DT
+    //       just because we did not re-include its DT specifically and we're
+    //       also bundling in a default policy.
+    //       NOTE ---> Should this just be the default behavior of ANY_REGION?
+    //
+    // TODO: [APOLLO]
+    //       Keep models around, when a loop gets encountered for the first time,
+    //       make sure it has a chance to check out settings for itself from
+    //       the prior package. (Applies when an application starts up using
+    //       a prior learned model. This may already be working, just verify.)
+    //
+
 template <typename Iterable, typename Func>
 RAJA_INLINE void forall_impl(const apollo_exec &, Iterable &&iter, Func &&body)
 {
     static Apollo         *apollo             = Apollo::instance();
     static Apollo::Region *apolloRegion       = nullptr;
     static int             apollo_exec_count  = 0;
-    static int             new_policy         = 0;
-    static int             old_policy         = 0;
+    static int             policy_index       = 0;
     static int             th_count_opts[6]   = {2, 2, 2, 2, 2, 2};
     if (apolloRegion == nullptr) {
         // Set up this Apollo::Region for the first time:       (Runs only once)
         std::stringstream ss_location;
         ss_location << apollo->callpath.doStackwalk().get(1);
+        // Extract out the pointer.  (There is probably a direct way to do this...)
+        std::string offsetptr = ss_location.str();
+        offsetptr = offsetptr.substr((offsetptr.rfind("/") + 1), (offsetptr.length() - 1));
 
         apolloRegion = new Apollo::Region(
             Apollo::instance(),
-            ss_location.str().c_str(),
+            offsetptr.c_str(),
             RAJA::policy::apollo::POLICY_COUNT);
         // Set the range of thread counts we want to make available for
         // bootstrapping and use by this Apollo::Region.
@@ -239,46 +249,15 @@ RAJA_INLINE void forall_impl(const apollo_exec &, Iterable &&iter, Func &&body)
     double num_elements = 0.0;
     num_elements = (double) std::distance(std::begin(iter), std::end(iter));
 
-    //
-    // TODO: Also allow (elsewhere, just noting) the flushAllRegions event
-    //       to be set up in different modes, where it step % rank sends, or
-    //       only sends every N steps, etc.  I should have a JSON wrapper
-    //       around the current JSON package so I can process it as either a
-    //       Directives or ModelPackage
-    //
-    // TODO: Allow messages to be sent to specific ranks only
-    // TODO: New magic word: __ANY_REGION__ --> __NEW_REGION__ that will only
-    //       assign a policy to regions that have not been directly targeted
-    //       before.
-    //
-    // TODO: Keep models around, when a loop gets encountered for the first time,
-    //       make sure it has a chance to check out settings for itself from
-    //       the prior package. (Applies when an application starts up using
-    //       a prior learned model. This may already be working, just verify.)
-    //
-    //
-    // If there isn't much to do this time...
-    //if (num_elements < apolloRegion->minimum_elements_to_evaluate_model) {
-    //    // Don't bother with any timing/reporting about this loop invocation.
-    //    // Run the loop body with whatever OpenMP settings are in place from
-    //    // this or some other previous Apollo model's evaluation:
-    //    apolloPolicySwitcher(1, th_count_opts, [=] (auto pol) mutable {
-    //        forall_impl(pol, iter, body); });
-    //} else {
-        // ...otherwise, we DO have enough work to bother checking out our
-        // model and selecting an appropriate policy. Start timing, note
-        // features, and pick an optimal solution:
-        apolloRegion->begin(apollo_exec_count++);
-        apollo->setFeature("num_elements", num_elements);
+    apolloregion->begin();
+    apollo->setfeature("num_elements", num_elements);
 
-        old_policy = new_policy;
-        new_policy = apolloRegion->getPolicyIndex();
+    policy_index = apolloregion->getpolicyindex();
 
-        apolloPolicySwitcher(new_policy, old_policy, th_count_opts, [=] (auto pol) mutable {
+    apollopolicyswitcher(policy_index, th_count_opts, [=] (auto pol) mutable {
             forall_impl(pol, iter, body); });
 
-        apolloRegion->end();
-    //}
+    apolloregion->end();
 
 }
 
