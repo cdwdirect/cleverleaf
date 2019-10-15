@@ -1,0 +1,14 @@
+#!/bin/bash
+if [ "x$1" == "x" ] ; then
+    echo "USAGE: ./go.raja <apollo | normal> <Release | RelWithDebInfo>"
+    kill -INT $$
+fi
+if [ "x$2" == "x" ] ; then
+    echo "USAGE: ./go.raja <apollo | normal> <Release | RelWithDebInfo>"
+    kill -INT $$
+fi
+#
+./configure.$1 -m $2 -p package-$1 -c RAJA
+cd package-$1/$2/build/RAJA
+make -j install
+cd ../../../../
