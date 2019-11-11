@@ -1,64 +1,137 @@
-###############################################################################
-# Copyright (c) 2017-2018, Lawrence Livermore National Security, LLC.
-#
-# Produced at the Lawrence Livermore National Laboratory
-#
-# LLNL-CODE-725085
-#
-# All rights reserved.
-#
-# This file is part of BLT.
-#
-# For additional details, please also read BLT/LICENSE.
-#
-# Redistribution and use in source and binary forms, with or without
-# modification, are permitted provided that the following conditions are met:
-#
-# * Redistributions of source code must retain the above copyright notice,
-#   this list of conditions and the disclaimer below.
-#
-# * Redistributions in binary form must reproduce the above copyright notice,
-#   this list of conditions and the disclaimer (as noted below) in the
-#   documentation and/or other materials provided with the distribution.
-#
-# * Neither the name of the LLNS/LLNL nor the names of its contributors may
-#   be used to endorse or promote products derived from this software without
-#   specific prior written permission.
-#
-# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
-# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
-# ARE DISCLAIMED. IN NO EVENT SHALL LAWRENCE LIVERMORE NATIONAL SECURITY,
-# LLC, THE U.S. DEPARTMENT OF ENERGY OR CONTRIBUTORS BE LIABLE FOR ANY
-# DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
-# DAMAGES  (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
-# OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
-# HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
-# STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING
-# IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-# POSSIBILITY OF SUCH DAMAGE.
-#
-###############################################################################
+# Copyright (c) 2017-2019, Lawrence Livermore National Security, LLC and
+# other BLT Project Developers. See the top-level COPYRIGHT file for details
+# 
+# SPDX-License-Identifier: (BSD-3-Clause)
 
 ################################
 # MPI
 ################################
 
+# CMake changed some of the output variables that we use from Find(MPI)
+# in 3.10+.  This toggles the variables based on the CMake version
+# the user is running.
+if( ${CMAKE_VERSION} VERSION_GREATER_EQUAL "3.10.0" )
+    if (NOT MPIEXEC_EXECUTABLE AND MPIEXEC)
+        set(MPIEXEC_EXECUTABLE ${MPIEXEC} CACHE PATH "" FORCE)
+    endif()
+
+    set(_mpi_includes_suffix "INCLUDE_DIRS")
+    set(_mpi_compile_flags_suffix "COMPILE_OPTIONS")
+else()
+    if (MPIEXEC_EXECUTABLE AND NOT MPIEXEC)
+        set(MPIEXEC ${MPIEXEC_EXECUTABLE} CACHE PATH "" FORCE)
+    endif()
+
+    set(_mpi_includes_suffix "INCLUDE_PATH")
+    set(_mpi_compile_flags_suffix "COMPILE_FLAGS")
+endif()
+
+set(_mpi_compile_flags )
+set(_mpi_includes )
+set(_mpi_libraries )
+set(_mpi_link_flags )
+
+message(STATUS "Enable FindMPI:  ${ENABLE_FIND_MPI}")
+
 if (ENABLE_FIND_MPI)
     find_package(MPI REQUIRED)
 
-    message(STATUS "MPI C Compile Flags:  ${MPI_C_COMPILE_FLAGS}")
-    message(STATUS "MPI C Include Path:   ${MPI_C_INCLUDE_PATH}")
-    message(STATUS "MPI C Link Flags:     ${MPI_C_LINK_FLAGS}")
-    message(STATUS "MPI C Libraries:      ${MPI_C_LIBRARIES}")
+    #-------------------
+    # Merge found MPI info and remove duplication
+    #-------------------
+    # Compile flags
+    set(_c_flag ${MPI_C_${_mpi_compile_flags_suffix}})
+    if (_c_flag AND ENABLE_CUDA)
+        list(APPEND _mpi_compile_flags
+                    $<$<NOT:$<COMPILE_LANGUAGE:CUDA>>:${_c_flag}>
+                    $<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler=${_c_flag}>)
+    else()
+        list(APPEND _mpi_compile_flags ${_c_flag})
+    endif()
 
-    message(STATUS "MPI CXX Compile Flags: ${MPI_CXX_COMPILE_FLAGS}")
-    message(STATUS "MPI CXX Include Path:  ${MPI_CXX_INCLUDE_PATH}")
-    message(STATUS "MPI CXX Link Flags:    ${MPI_CXX_LINK_FLAGS}")
-    message(STATUS "MPI CXX Libraries:     ${MPI_CXX_LIBRARIES}")
+    set(_cxx_flag ${MPI_CXX_${_mpi_compile_flags_suffix}})
+    if (_cxx_flag AND NOT "${_c_flag}" STREQUAL "${_cxx_flag}")
+        if (ENABLE_CUDA)
+            list(APPEND _mpi_compile_flags
+            $<$<NOT:$<COMPILE_LANGUAGE:CUDA>>:${_cxx_flag}>
+            $<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler=${_cxx_flag}>)
+        else()
+            list(APPEND _mpi_compile_flags ${_cxx_flag})
+        endif()
+    endif()
+
+    if (ENABLE_FORTRAN)
+        set(_f_flag ${MPI_Fortran_${_mpi_compile_flags_suffix}})
+        if (_f_flag AND NOT "${c_flg}" STREQUAL "${_f_flag}")
+            list(APPEND _mpi_compile_flags ${_f_flag})
+        endif()
+    endif()
+    unset(_c_flag)
+    unset(_cxx_flag)
+    unset(_f_flag)
+
+    # Include paths
+    list(APPEND _mpi_includes ${MPI_C_${_mpi_includes_suffix}}
+                              ${MPI_CXX_${_mpi_includes_suffix}})
+    if (ENABLE_FORTRAN)
+        list(APPEND _mpi_includes ${MPI_Fortran_${_mpi_includes_suffix}})
+    endif()
+    blt_list_remove_duplicates(TO _mpi_includes)
+
+    # Link flags
+    set(_mpi_link_flags ${MPI_C_LINK_FLAGS})
+    if (NOT "${MPI_C_LINK_FLAGS}" STREQUAL "${MPI_CXX_LINK_FLAGS}")
+        list(APPEND _mpi_link_flags ${MPI_CXX_LINK_FLAGS})
+    endif()
+    if (ENABLE_FORTRAN)
+        if (NOT "${MPI_C_LINK_FLAGS}" STREQUAL "${MPI_Fortran_LINK_FLAGS}")
+            list(APPEND _mpi_link_flags ${MPI_CXX_LINK_FLAGS})
+        endif()
+    endif()
+    # Fixes for linking with NVCC
+    if (CUDA_LINK_WITH_NVCC)
+        # Convert rpath flag if linking with CUDA
+        string(REPLACE "-Wl,-rpath," "-Xlinker -rpath -Xlinker "
+                       _mpi_link_flags "${_mpi_link_flags}")
+        # -pthread just doesn't work with nvcc                       
+        string(REPLACE "-pthread" " "
+                       _mpi_link_flags "${_mpi_link_flags}")
+    endif()
+
+    # Libraries
+    set(_mpi_libraries ${MPI_C_LIBRARIES} ${MPI_CXX_LIBRARIES})
+    if (ENABLE_FORTRAN)
+        list(APPEND _mpi_libraries ${MPI_Fortran_LIBRARIES})
+    endif()
+    blt_list_remove_duplicates(TO _mpi_libraries)
 endif()
 
-message(STATUS "MPI Executable:       ${MPIEXEC}")
+# Allow users to override CMake's FindMPI
+if (BLT_MPI_COMPILE_FLAGS)
+    set(_mpi_compile_flags ${BLT_MPI_COMPILE_FLAGS})
+endif()
+if (BLT_MPI_INCLUDES)
+    set(_mpi_includes ${BLT_MPI_INCLUDES})
+endif()
+if (BLT_MPI_LIBRARIES)
+    set(_mpi_libraries ${BLT_MPI_LIBRARIES})
+endif()
+if (BLT_MPI_LINK_FLAGS)
+    set(_mpi_link_flags ${BLT_MPI_LINK_FLAGS})
+endif()
+
+
+# Output all MPI information
+message(STATUS "BLT MPI Compile Flags:  ${_mpi_compile_flags}")
+message(STATUS "BLT MPI Include Paths:  ${_mpi_includes}")
+message(STATUS "BLT MPI Libraries:      ${_mpi_libraries}")
+message(STATUS "BLT MPI Link Flags:     ${_mpi_link_flags}")
+
+if( ${CMAKE_VERSION} VERSION_GREATER_EQUAL "3.10.0" )
+    message(STATUS "MPI Executable:       ${MPIEXEC_EXECUTABLE}")
+else()
+    message(STATUS "MPI Executable:       ${MPIEXEC}")
+endif()
 message(STATUS "MPI Num Proc Flag:    ${MPIEXEC_NUMPROC_FLAG}")
 message(STATUS "MPI Command Append:   ${BLT_MPI_COMMAND_APPEND}")
 
@@ -66,7 +139,7 @@ if (ENABLE_FORTRAN)
     # Determine if we should use fortran mpif.h header or fortran mpi module
     find_path(mpif_path
         NAMES "mpif.h"
-        PATHS ${MPI_Fortran_INCLUDE_PATH}
+        PATHS ${_mpi_includes}
         NO_DEFAULT_PATH
         )
     
@@ -79,12 +152,10 @@ if (ENABLE_FORTRAN)
     endif()
 endif()
 
-# register MPI with blt
-blt_register_library(NAME mpi
-                     INCLUDES ${MPI_C_INCLUDE_PATH} ${MPI_CXX_INCLUDE_PATH} ${MPI_Fortran_INCLUDE_PATH}
+# Create the registered library
+blt_register_library(NAME          mpi
+                     INCLUDES      ${_mpi_includes}
                      TREAT_INCLUDES_AS_SYSTEM ON
-                     LIBRARIES ${MPI_C_LIBRARIES} ${MPI_CXX_LIBRARIES} ${MPI_Fortran_LIBRARIES}
-                     COMPILE_FLAGS "${MPI_C_COMPILE_FLAGS}"
-                     LINK_FLAGS    "${MPI_C_COMPILE_FLAGS} ${MPI_Fortran_LINK_FLAGS}")
-
-
+                     LIBRARIES     ${_mpi_libraries}
+                     COMPILE_FLAGS ${_mpi_compile_flags}
+                     LINK_FLAGS    ${_mpi_link_flags} )

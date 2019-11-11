@@ -298,6 +298,21 @@ set (pdat_sources
   ${CMAKE_CURRENT_BINARY_DIR}/fortran/pdat_lintimint2d.f
   ${CMAKE_CURRENT_BINARY_DIR}/fortran/pdat_lintimint3d.f)
 
+set_source_files_properties(
+  ${CMAKE_CURRENT_BINARY_DIR}/fortran/pdat_concoarsen1d.f
+  ${CMAKE_CURRENT_BINARY_DIR}/fortran/pdat_concoarsen2d.f
+  ${CMAKE_CURRENT_BINARY_DIR}/fortran/pdat_concoarsen3d.f
+  ${CMAKE_CURRENT_BINARY_DIR}/fortran/pdat_conrefine1d.f
+  ${CMAKE_CURRENT_BINARY_DIR}/fortran/pdat_conrefine2d.f
+  ${CMAKE_CURRENT_BINARY_DIR}/fortran/pdat_conrefine3d.f
+  ${CMAKE_CURRENT_BINARY_DIR}/fortran/pdat_dbugfort1d.f
+  ${CMAKE_CURRENT_BINARY_DIR}/fortran/pdat_dbugfort2d.f
+  ${CMAKE_CURRENT_BINARY_DIR}/fortran/pdat_dbugfort3d.f
+  ${CMAKE_CURRENT_BINARY_DIR}/fortran/pdat_lintimint1d.f
+  ${CMAKE_CURRENT_BINARY_DIR}/fortran/pdat_lintimint2d.f
+  ${CMAKE_CURRENT_BINARY_DIR}/fortran/pdat_lintimint3d.f
+  PROPERTIES LANGUAGE Fortran)
+
 set (pdat_depends
   SAMRAI_hier
   SAMRAI_tbox

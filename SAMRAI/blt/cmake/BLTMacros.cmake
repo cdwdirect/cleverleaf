@@ -1,45 +1,7 @@
-###############################################################################
-# Copyright (c) 2017-2018, Lawrence Livermore National Security, LLC.
-#
-# Produced at the Lawrence Livermore National Laboratory
-#
-# LLNL-CODE-725085
-#
-# All rights reserved.
-#
-# This file is part of BLT.
-#
-# For additional details, please also read BLT/LICENSE.
-#
-# Redistribution and use in source and binary forms, with or without
-# modification, are permitted provided that the following conditions are met:
-#
-# * Redistributions of source code must retain the above copyright notice,
-#   this list of conditions and the disclaimer below.
-#
-# * Redistributions in binary form must reproduce the above copyright notice,
-#   this list of conditions and the disclaimer (as noted below) in the
-#   documentation and/or other materials provided with the distribution.
-#
-# * Neither the name of the LLNS/LLNL nor the names of its contributors may
-#   be used to endorse or promote products derived from this software without
-#   specific prior written permission.
-#
-# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
-# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
-# ARE DISCLAIMED. IN NO EVENT SHALL LAWRENCE LIVERMORE NATIONAL SECURITY,
-# LLC, THE U.S. DEPARTMENT OF ENERGY OR CONTRIBUTORS BE LIABLE FOR ANY
-# DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
-# DAMAGES  (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
-# OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
-# HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
-# STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING
-# IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-# POSSIBILITY OF SUCH DAMAGE.
-#
-###############################################################################
-
+# Copyright (c) 2017-2019, Lawrence Livermore National Security, LLC and
+# other BLT Project Developers. See the top-level COPYRIGHT file for details
+# 
+# SPDX-License-Identifier: (BSD-3-Clause)
 
 include(${BLT_ROOT_DIR}/cmake/BLTPrivateMacros.cmake)
 
@@ -47,24 +9,6 @@ include(${BLT_ROOT_DIR}/cmake/BLTPrivateMacros.cmake)
 ## blt_list_append( TO <list> ELEMENTS [ <element>...] IF <bool> )
 ##
 ## Appends elements to a list if the specified bool evaluates to true.
-##
-## This macro is essentially a wrapper around CMake's `list(APPEND ...)`
-## command which allows inlining a conditional check within the same call
-## for clarity and convenience.
-##
-## This macro requires specifying:
-##   (1) The target list to append to by passing TO <list>
-##   (2) A condition to check by passing IF <bool>
-##   (3) The list of elements to append by passing ELEMENTS [<element>...]
-##
-## Note, the argument passed to the IF option has to be a single boolean value
-## and cannot be a boolean expression since CMake cannot evaluate those inline.
-##
-## Usage Example:
-##
-##  set(mylist A B)
-##  blt_list_append( TO mylist ELEMENTS C IF ${ENABLE_C} )
-##
 ##------------------------------------------------------------------------------
 macro(blt_list_append)
 
@@ -76,7 +20,7 @@ macro(blt_list_append)
     cmake_parse_arguments(arg
         "${options}" "${singleValueArgs}" "${multiValueArgs}" ${ARGN} )
 
-     # sanity checks
+     # Sanity checks
     if( NOT DEFINED arg_TO )
         message(FATAL_ERROR "blt_list_append() requires a TO <list> argument")
     endif()
@@ -85,123 +29,130 @@ macro(blt_list_append)
          message(FATAL_ERROR "blt_list_append() requires ELEMENTS to be specified" )
     endif()
 
+    # determine if we should add the elements to the list
+    set(_shouldAdd FALSE )
+    set(_listVar "${ARGN}")         # convert macro arguments to list variable
+    if("IF" IN_LIST _listVar)
+        set(_shouldAdd ${arg_IF})   # use IF condition, when present
+    else()
+        set(_shouldAdd TRUE)        # otherwise, always add the elements
+    endif()
+
     # append if
-    if ( ${arg_IF} )
+    if ( ${_shouldAdd} )
         list( APPEND ${arg_TO} ${arg_ELEMENTS} )
     endif()
 
+    unset(_shouldAdd)
+    unset(_listVar)
+
 endmacro(blt_list_append)
 
+
 ##------------------------------------------------------------------------------
-## blt_add_target_definitions(TO <target> TARGET_DEFINITIONS [FOO [BAR ...]])
+## blt_list_remove_duplicates( TO <list> )
+##
+## Removes duplicate elements from the given TO list.
+##------------------------------------------------------------------------------
+macro(blt_list_remove_duplicates)
+
+    set(options)
+    set(singleValueArgs TO )
+    set(multiValueArgs )
+
+    # parse macro arguments
+    cmake_parse_arguments(arg
+        "${options}" "${singleValueArgs}" "${multiValueArgs}" ${ARGN} )
+
+    # Sanity checks
+    if( NOT DEFINED arg_TO )
+        message(FATAL_ERROR "blt_list_append() requires a TO <list> argument")
+    endif()
+
+    if ( ${arg_TO} )
+        list(REMOVE_DUPLICATES ${arg_TO} )
+    endif()
+
+endmacro(blt_list_remove_duplicates)
+
+
+##------------------------------------------------------------------------------
+## blt_add_target_definitions(TO     <target>
+##                            SCOPE  <PUBLIC (Default)| INTERFACE | PRIVATE>
+##                            TARGET_DEFINITIONS [FOO [BAR ...]])
 ##
 ## Adds pre-processor definitions to the given target.
-##
-## Adds pre-processor definitions to a particular. This macro provides very
-## similar functionality to cmake's native "add_definitions" command, but,
-## it provides more fine-grained scoping for the compile definitions on a
-## per target basis. Given a list of definitions, e.g., FOO and BAR, this macro
-## adds compiler definitions to the compiler command for the given target, i.e.,
-## it will pass -DFOO and -DBAR.
-##
-## The supplied target must be added via add_executable() or add_library() or
-## with the corresponding blt_add_executable() and blt_add_library() macros.
-##
-## Note, the target definitions can either include or omit the "-D" characters. 
-## E.g. the following are all valid ways to add two compile definitions 
-## (A=1 and B) to target 'foo'
-##
-##   blt_add_target_definitions(TO foo TARGET_DEFINITIONS A=1 B)
-##   blt_add_target_definitions(TO foo TARGET_DEFINITIONS -DA=1 -DB)
-##   blt_add_target_definitions(TO foo TARGET_DEFINITIONS "A=1;-DB")
-##   blt_add_target_definitions(TO foo TARGET_DEFINITIONS " " -DA=1;B")
 ##------------------------------------------------------------------------------
 macro(blt_add_target_definitions)
 
     set(options)
-    set(singleValueArgs TO)
+    set(singleValueArgs TO SCOPE)
     set(multiValueArgs TARGET_DEFINITIONS)
 
     # Parse the arguments to the macro
     cmake_parse_arguments(arg
         "${options}" "${singleValueArgs}" "${multiValueArgs}" ${ARGN})
 
-    ## check that the passed in parameter TO is actually a target
+    # Sanity checks
     if(NOT TARGET ${arg_TO})
         message(FATAL_ERROR "Target ${arg_TO} passed to blt_add_target_definitions is not a valid cmake target")    
     endif()
 
-    ## only add the flag if it is not empty
+    blt_determine_scope(TARGET ${arg_TO} SCOPE "${arg_SCOPE}" OUT _scope)
+
+    # Only add the flag if it is not empty
     string(STRIP "${arg_TARGET_DEFINITIONS}" _strippedDefs)
     if(NOT "${_strippedDefs}" STREQUAL "")
-        get_property(_targetType TARGET ${arg_TO} PROPERTY TYPE)
-        if(${_targetType} STREQUAL "INTERFACE_LIBRARY")
-            target_compile_definitions(${arg_TO} INTERFACE ${_strippedDefs})
-        else()
-            target_compile_definitions(${arg_TO} PUBLIC ${_strippedDefs})
-        endif()        
+        target_compile_definitions(${arg_TO} ${_scope} ${_strippedDefs})
     endif()
 
-    unset(_targetType)
+    unset(_scope)
     unset(_strippedDefs)
 
 endmacro(blt_add_target_definitions)
 
 
 ##------------------------------------------------------------------------------
-## blt_add_target_compile_flags (TO <target> FLAGS [FOO [BAR ...]])
+## blt_add_target_compile_flags(TO    <target>
+##                              SCOPE  <PUBLIC (Default)| INTERFACE | PRIVATE>
+##                              FLAGS [FOO [BAR ...]])
 ##
 ## Adds compiler flags to a target (library, executable or interface) by 
 ## appending to the target's existing flags.
-##
-## The TO argument (required) specifies a cmake target.
-##
-## The FLAGS argument contains a list of compiler flags to add to the target. 
-## This macro will strip away leading and trailing whitespace from each flag.
 ##------------------------------------------------------------------------------
 macro(blt_add_target_compile_flags)
 
     set(options)
-    set(singleValuedArgs TO)
+    set(singleValuedArgs TO SCOPE)
     set(multiValuedArgs FLAGS)
 
-    ## parse the arguments to the macro
+    # Parse the arguments to the macro
     cmake_parse_arguments(arg
          "${options}" "${singleValuedArgs}" "${multiValuedArgs}" ${ARGN} )
 
-    ## check that the passed in parameter TO is actually a target
+    # Sanity checks
     if(NOT TARGET ${arg_TO})
         message(FATAL_ERROR "Target ${arg_TO} passed to blt_add_target_compile_flags is not a valid cmake target")    
     endif()
 
-    ## only add the flag if it is not empty
+    blt_determine_scope(TARGET ${arg_TO} SCOPE "${arg_SCOPE}" OUT _scope)
+
+    # Only add the flag if it is not empty
     string(STRIP "${arg_FLAGS}" _strippedFlags)
     if(NOT "${_strippedFlags}" STREQUAL "")
-        get_property(_targetType TARGET ${arg_TO} PROPERTY TYPE)
-        if(${_targetType} STREQUAL "INTERFACE_LIBRARY")
-            target_compile_options(${arg_TO} INTERFACE ${_strippedFlags})
-        else()
-            target_compile_options(${arg_TO} PUBLIC ${_strippedFlags})
-        endif()        
+        target_compile_options(${arg_TO} ${_scope} ${_strippedFlags})
     endif()
 
-    unset(_targetType)
     unset(_strippedFlags)
+    unset(_scope)
 
 endmacro(blt_add_target_compile_flags)
 
 
 ##------------------------------------------------------------------------------
-## blt_set_target_folder (TARGET <target> FOLDER <folder>)
+## blt_set_target_folder(TARGET <target> FOLDER <folder>)
 ##
 ## Sets the folder property of cmake target <target> to <folder>.
-##
-## This feature is only available when blt's ENABLE_FOLDERS option is ON and 
-## in cmake generators that support folders (but is safe to call regardless
-## of the generator or value of ENABLE_FOLDERS).
-##
-## Note: Do not use this macro on header-only (INTERFACE) library targets, since 
-## this will generate a cmake configuration error.
 ##------------------------------------------------------------------------------
 macro(blt_set_target_folder)
 
@@ -209,11 +160,11 @@ macro(blt_set_target_folder)
     set(singleValuedArgs TARGET FOLDER)
     set(multiValuedArgs)
 
-    ## parse the arguments to the macro
+    # Parse the arguments to the macro
     cmake_parse_arguments(arg
          "${options}" "${singleValuedArgs}" "${multiValuedArgs}" ${ARGN} )
 
-    ## check for required arguments
+    # Sanity checks
     if(NOT DEFINED arg_TARGET)
         message(FATAL_ERROR "TARGET is a required parameter for blt_set_target_folder macro")
     endif()
@@ -226,7 +177,7 @@ macro(blt_set_target_folder)
         message(FATAL_ERROR "FOLDER is a required parameter for blt_set_target_folder macro")
     endif()
 
-    ## set the folder property for this target
+    # Set the folder property for this target
     if(ENABLE_FOLDERS AND NOT "${arg_FOLDER}" STREQUAL "")
         set_property(TARGET ${arg_TARGET} PROPERTY FOLDER "${arg_FOLDER}")
     endif()
@@ -235,33 +186,66 @@ endmacro(blt_set_target_folder)
 
 
 ##------------------------------------------------------------------------------
-## blt_add_target_link_flags (TO <target> FLAGS [FOO [BAR ...]])
+## blt_add_target_link_flags (TO    <target>
+##                            SCOPE <PUBLIC (Default)| INTERFACE | PRIVATE>
+##                            FLAGS [FOO [BAR ...]])
 ##
 ## Adds linker flags to a target by appending to the target's existing flags.
 ##------------------------------------------------------------------------------
 macro(blt_add_target_link_flags)
 
     set(options)
-    set(singleValuedArgs TO)
+    set(singleValuedArgs TO SCOPE)
     set(multiValuedArgs FLAGS)
 
     ## parse the arguments to the macro
     cmake_parse_arguments(arg
          "${options}" "${singleValuedArgs}" "${multiValuedArgs}" ${ARGN} )
 
-    if(NOT "${arg_FLAGS}" STREQUAL "")
-        # get prev flags
-        get_target_property(_LINK_FLAGS ${arg_TO} LINK_FLAGS)
-        if(NOT _LINK_FLAGS)
-            set(_LINK_FLAGS "")
-        endif()
-        # append new flag
-        set(_LINK_FLAGS "${arg_FLAGS} ${_LINK_FLAGS}")
-        set_target_properties(${arg_TO}
-                              PROPERTIES LINK_FLAGS "${_LINK_FLAGS}" )
+    set(_flags ${arg_FLAGS})
+    # Convert rpath flag if linking with CUDA
+    if (CUDA_LINK_WITH_NVCC)
+        string(REPLACE "-Wl,-rpath," "-Xlinker -rpath -Xlinker "
+                       _flags "${_flags}")
     endif()
 
+    # Only add the flag if it is not empty
+    if(NOT "${arg_FLAGS}" STREQUAL "")
+        if( ${CMAKE_VERSION} VERSION_GREATER_EQUAL "3.13.0" )
+            # In CMake 3.13+, LINK_FLAGS was converted to LINK_OPTIONS.
+            # This now supports generator expressions and scoping but expects a list
+            # not a string
+            blt_determine_scope(TARGET ${arg_TO} SCOPE "${arg_SCOPE}" OUT _scope)
+
+            # Note: "SHELL:"" causes the flags to be not de-duplicated and parsed with
+            # separate_arguments
+            if(NOT "${arg_FLAGS}" MATCHES SHELL:)
+                target_link_options(${arg_TO} ${_scope} SHELL:${arg_FLAGS})
+            else()
+                target_link_options(${arg_TO} ${_scope} ${arg_FLAGS})
+            endif()
+        else()
+            # In CMake <= 3.12, there is no target_link_flags or target_link_options command
+            get_target_property(_link_flags ${arg_TO} LINK_FLAGS)
+            if(NOT _link_flags)
+                set(_link_flags "")
+            endif()
+            set(_link_flags "${_flags} ${_link_flags}")
+
+            # Convert from a CMake ;-list to a string
+            string (REPLACE ";" " " _link_flags_str "${_link_flags}")
+            set_target_properties(${arg_TO}
+                                  PROPERTIES LINK_FLAGS "${_link_flags_str}")
+        endif()
+    endif()
+
+    unset(_flags)
+    unset(_link_flags)
+    unset(_link_flags_str)
+    unset(_scope)
+
 endmacro(blt_add_target_link_flags)
+
 
 ##------------------------------------------------------------------------------
 ## blt_register_library( NAME <libname>
@@ -274,35 +258,11 @@ endmacro(blt_add_target_link_flags)
 ##                       LINK_FLAGS [ flag1 [ flag2 ..]]
 ##                       DEFINES [def1 [def2 ...]] )
 ##
-## Registers a library to the project to ease use in other blt macro calls.
-##
-## Stores information about a library in a specific way that is easily recalled
-## in other macros.  For example, after registering gtest, you can add gtest to
-## the DEPENDS_ON in your blt_add_executable call and it will add the INCLUDES
-## and LIBRARIES to that executable.
-##
-## TREAT_INCLUDES_AS_SYSTEM informs the compiler to treat this library's include paths
-## as system headers.  Only some compilers support this. This is useful if the headers
-## generate warnings you want to not have them reported in your build. This defaults
-## to OFF.
-##
-## This does not actually build the library.  This is strictly to ease use after
-## discovering it on your system or building it yourself inside your project.
-##
-## Output variables (name = "foo"):
-##  BLT_FOO_IS_REGISTERED_LIBRARY
-##  BLT_FOO_DEPENDS_ON
-##  BLT_FOO_INCLUDES
-##  BLT_FOO_TREAT_INCLUDES_AS_SYSTEM
-##  BLT_FOO_FORTRAN_MODULES
-##  BLT_FOO_LIBRARIES
-##  BLT_FOO_COMPILE_FLAGS
-##  BLT_FOO_LINK_FLAGS
-##  BLT_FOO_DEFINES
+## Registers a library to the project to ease use in other BLT macro calls.
 ##------------------------------------------------------------------------------
 macro(blt_register_library)
 
-    set(singleValueArgs NAME TREAT_INCLUDES_AS_SYSTEM)
+    set(singleValueArgs NAME OBJECT TREAT_INCLUDES_AS_SYSTEM)
     set(multiValueArgs INCLUDES 
                        DEPENDS_ON
                        FORTRAN_MODULES
@@ -320,29 +280,36 @@ macro(blt_register_library)
     set(BLT_${uppercase_name}_IS_REGISTERED_LIBRARY TRUE CACHE BOOL "" FORCE)
 
     if( arg_DEPENDS_ON )
-        set(BLT_${uppercase_name}_DEPENDS_ON ${arg_DEPENDS_ON} CACHE LIST "" FORCE)
+        set(BLT_${uppercase_name}_DEPENDS_ON ${arg_DEPENDS_ON} CACHE STRING "" FORCE)
         mark_as_advanced(BLT_${uppercase_name}_DEPENDS_ON)
     endif()
 
     if( arg_INCLUDES )
-        set(BLT_${uppercase_name}_INCLUDES ${arg_INCLUDES} CACHE LIST "" FORCE)
+        set(BLT_${uppercase_name}_INCLUDES ${arg_INCLUDES} CACHE STRING "" FORCE)
         mark_as_advanced(BLT_${uppercase_name}_INCLUDES)
     endif()
 
-    if( ${arg_TREAT_INCLUDES_AS_SYSTEM} )
-        set(BLT_${uppercase_name}_TREAT_INCLUDES_AS_SYSTEM ON CACHE BOOL "" FORCE)
+    if( ${arg_OBJECT} )
+        set(BLT_${uppercase_name}_IS_OBJECT_LIBRARY TRUE CACHE BOOL "" FORCE)
     else()
-        set(BLT_${uppercase_name}_TREAT_INCLUDES_AS_SYSTEM OFF CACHE BOOL "" FORCE)
+        set(BLT_${uppercase_name}_IS_OBJECT_LIBRARY FALSE CACHE BOOL "" FORCE)
+    endif()
+    mark_as_advanced(BLT_${uppercase_name}_IS_OBJECT_LIBRARY)
+
+    if( ${arg_TREAT_INCLUDES_AS_SYSTEM} )
+        set(BLT_${uppercase_name}_TREAT_INCLUDES_AS_SYSTEM TRUE CACHE BOOL "" FORCE)
+    else()
+        set(BLT_${uppercase_name}_TREAT_INCLUDES_AS_SYSTEM FALSE CACHE BOOL "" FORCE)
     endif()
     mark_as_advanced(BLT_${uppercase_name}_TREAT_INCLUDES_AS_SYSTEM)
 
     if( ENABLE_FORTRAN AND arg_FORTRAN_MODULES )
-        set(BLT_${uppercase_name}_FORTRAN_MODULES ${arg_INCLUDES} CACHE LIST "" FORCE)
+        set(BLT_${uppercase_name}_FORTRAN_MODULES ${arg_INCLUDES} CACHE STRING "" FORCE)
         mark_as_advanced(BLT_${uppercase_name}_FORTRAN_MODULES)
     endif()
 
     if( arg_LIBRARIES )
-        set(BLT_${uppercase_name}_LIBRARIES ${arg_LIBRARIES} CACHE LIST "" FORCE)
+        set(BLT_${uppercase_name}_LIBRARIES ${arg_LIBRARIES} CACHE STRING "" FORCE)
     else()
         # This prevents cmake from falling back on adding -l<library name>
         # to the command line for BLT registered libraries which are not
@@ -362,7 +329,7 @@ macro(blt_register_library)
     endif()
 
     if( arg_DEFINES )
-        set(BLT_${uppercase_name}_DEFINES ${arg_DEFINES} CACHE LIST "" FORCE)
+        set(BLT_${uppercase_name}_DEFINES ${arg_DEFINES} CACHE STRING "" FORCE)
         mark_as_advanced(BLT_${uppercase_name}_DEFINES)
     endif()
 
@@ -370,67 +337,32 @@ endmacro(blt_register_library)
 
 
 ##------------------------------------------------------------------------------
-## blt_add_library( NAME <libname>
-##                  SOURCES [source1 [source2 ...]]
-##                  HEADERS [header1 [header2 ...]]
-##                  INCLUDES [dir1 [dir2 ...]]
-##                  DEFINES [define1 [define2 ...]]
-##                  DEPENDS_ON [dep1 ...] 
-##                  OUTPUT_NAME [name]
-##                  OUTPUT_DIR [dir]
-##                  SHARED [TRUE | FALSE]
+## blt_add_library( NAME         <libname>
+##                  SOURCES      [source1 [source2 ...]]
+##                  HEADERS      [header1 [header2 ...]]
+##                  INCLUDES     [dir1 [dir2 ...]]
+##                  DEFINES      [define1 [define2 ...]]
+##                  DEPENDS_ON   [dep1 ...] 
+##                  OUTPUT_NAME  [name]
+##                  OUTPUT_DIR   [dir]
+##                  SHARED       [TRUE | FALSE]
+##                  OBJECT       [TRUE | FALSE]
 ##                  CLEAR_PREFIX [TRUE | FALSE]
-##                  FOLDER [name]
-##                 )
+##                  FOLDER       [name])
 ##
 ## Adds a library target, called <libname>, to be built from the given sources.
-## This macro uses the BUILD_SHARED_LIBS, which is defaulted to OFF, to determine
-## whether the library will be build as shared or static. The optional boolean
-## SHARED argument can be used to override this choice.
-##
-## The INCLUDES argument allows you to define what include directories are
-## needed by any target that is dependent on this library.  These will
-## be inherited by CMake's target dependency rules.
-##
-## The DEFINES argument allows you to add needed compiler definitions that are
-## needed by any target that is dependent on this library.  These will
-## be inherited by CMake's target dependency rules.
-##
-## If given a DEPENDS_ON argument, it will add the necessary includes and 
-## libraries if they are already registered with blt_register_library.  If 
-## not it will add them as a CMake target dependency.
-##
-## In addition, this macro will add the associated dependencies to the given
-## library target. Specifically, it will add the dependency for the CMake target
-## and for copying the headers for that target as well.
-##
-## The OUTPUT_DIR is used to control the build output directory of this 
-## library. This is used to overwrite the default lib directory.
-##
-## OUTPUT_NAME is the name of the output file; the default is NAME.
-## It's useful when multiple libraries with the same name need to be created
-## by different targets. NAME is the target name, OUTPUT_NAME is the library name.
-##
-## CLEAR_PREFIX allows you to remove the automatically appended "lib" prefix
-## from your built library.  The created library will be foo.a instead of libfoo.a.
-##
-## FOLDER is an optional keyword to organize the target into a folder in an IDE.
-## This is available when ENABLE_FOLDERS is ON and when the cmake generator
-## supports this feature and will otherwise be ignored. 
-## Note: Do not use with header-only (INTERFACE)libraries, as this will generate 
-## a cmake configuration error.
 ##------------------------------------------------------------------------------
 macro(blt_add_library)
 
     set(options)
-    set(singleValueArgs NAME OUTPUT_NAME OUTPUT_DIR HEADERS_OUTPUT_SUBDIR SHARED CLEAR_PREFIX FOLDER)
+    set(singleValueArgs NAME OUTPUT_NAME OUTPUT_DIR HEADERS_OUTPUT_SUBDIR SHARED OBJECT CLEAR_PREFIX FOLDER)
     set(multiValueArgs SOURCES HEADERS INCLUDES DEFINES DEPENDS_ON)
 
     # parse the arguments
     cmake_parse_arguments(arg
         "${options}" "${singleValueArgs}" "${multiValueArgs}" ${ARGN} )
 
-    # sanity checks
+    # Sanity checks
     if( "${arg_NAME}" STREQUAL "" )
         message(FATAL_ERROR "blt_add_library() must be called with argument NAME <name>")
     endif()
@@ -439,45 +371,62 @@ macro(blt_add_library)
         message(FATAL_ERROR "blt_add_library(NAME ${arg_NAME} ...) called with no given sources or headers")
     endif()
 
-    # Determine whether to build as a shared library. Default to global variable unless
-    # SHARED parameter is specified
-    set(_build_shared_library ${BUILD_SHARED_LIBS})
-    if( DEFINED arg_SHARED )
-        set(_build_shared_library ${arg_SHARED})
+    if (DEFINED arg_OBJECT AND arg_OBJECT)
+        if (DEFINED arg_SHARED AND arg_SHARED)
+                message(FATAL_ERROR "blt_add_library(NAME ${arg_NAME} ...) cannot be called with both OBJECT and SHARED set to TRUE.")
+        endif()
+
+        if (NOT arg_SOURCES)
+            message(FATAL_ERROR "blt_add_library(NAME ${arg_NAME} ...) cannot create an object library with no sources.")
+        endif()
     endif()
 
     if ( arg_SOURCES )
-        if ( ${_build_shared_library} )
-            add_library( ${arg_NAME} SHARED ${arg_SOURCES} ${arg_HEADERS} )
-        else()
-            add_library( ${arg_NAME} STATIC ${arg_SOURCES} ${arg_HEADERS} )
+        # Determine type of library to build. STATIC by default and OBJECT takes
+        # precedence over global BUILD_SHARED_LIBS variable.
+        set(_build_shared_library ${BUILD_SHARED_LIBS})
+        if( DEFINED arg_SHARED )
+            set(_build_shared_library ${arg_SHARED})
         endif()
 
-        if (ENABLE_CUDA AND NOT ENABLE_CLANG_CUDA)
-            if ( ${_build_shared_library} )
-                set(_target_type "shared")
-            else()
-                set(_target_type "static")
+        if ( ${arg_OBJECT} )
+            set(_lib_type "OBJECT")
+            blt_register_library( NAME       ${arg_NAME}
+                                  DEPENDS_ON ${arg_DEPENDS_ON}
+                                  INCLUDES   ${arg_INCLUDES}
+                                  OBJECT     TRUE
+                                  DEFINES    ${arg_DEFINES} )
+        elseif ( ${_build_shared_library} )
+            set(_lib_type "SHARED")
+        else()
+            set(_lib_type "STATIC")
+        endif()
+
+        if (ENABLE_HIP)
+            blt_add_hip_library(NAME         ${arg_NAME}
+                                SOURCES      ${arg_SOURCES}
+                                HEADERS      ${arg_HEADERS}
+                                DEPENDS_ON   ${arg_DEPENDS_ON}
+                                LIBRARY_TYPE ${_lib_type} )
+        else()
+            add_library( ${arg_NAME} ${_lib_type} ${arg_SOURCES} ${arg_HEADERS} )
+
+            if (ENABLE_CUDA AND NOT ENABLE_CLANG_CUDA)
+                blt_setup_cuda_target(
+                    NAME         ${arg_NAME}
+                    SOURCES      ${arg_SOURCES}
+                    DEPENDS_ON   ${arg_DEPENDS_ON}
+                    LIBRARY_TYPE ${_lib_type})
             endif()
-            blt_setup_cuda_target(
-                NAME         ${arg_NAME}
-                SOURCES      ${arg_SOURCES}
-                DEPENDS_ON   ${arg_DEPENDS_ON}
-                LIBRARY_TYPE ${_target_type})
         endif()
     else()
         #
         #  Header-only library support
         #
         foreach (_file ${arg_HEADERS})
-            get_filename_component(_name ${_file} NAME)
-            get_filename_component(_absolute ${_file} ABSOLUTE)
-
             # Determine build location of headers
-            set(_build_headers ${_build_headers} ${_absolute})
-
-            # Determine install location of headers
-            set(_install_headers ${_install_headers} include/${arg_HEADERS_OUTPUT_SUBDIR}/${_name})
+            get_filename_component(_absolute ${_file} ABSOLUTE)
+            list(APPEND _build_headers ${_absolute})
         endforeach()
 
         #Note: This only works if both libraries are handled in the same directory,
@@ -504,11 +453,17 @@ macro(blt_add_library)
         target_include_directories(${arg_NAME} PRIVATE ${CMAKE_Fortran_MODULE_DIRECTORY})
     endif()
 
-    blt_setup_target( NAME ${arg_NAME}
-                      DEPENDS_ON ${arg_DEPENDS_ON} )
+    blt_setup_target( NAME       ${arg_NAME}
+                      DEPENDS_ON ${arg_DEPENDS_ON} 
+                      OBJECT     ${arg_OBJECT})
 
     if ( arg_INCLUDES )
-        target_include_directories(${arg_NAME} PUBLIC ${arg_INCLUDES})
+        if (NOT arg_SOURCES )
+            # Header only
+            target_include_directories(${arg_NAME} INTERFACE ${arg_INCLUDES})
+        else()
+            target_include_directories(${arg_NAME} PUBLIC ${arg_INCLUDES})
+        endif()
     endif()
 
     if ( arg_DEFINES )
@@ -537,38 +492,25 @@ macro(blt_add_library)
 
     blt_update_project_sources( TARGET_SOURCES ${arg_SOURCES} ${arg_HEADERS})
 
+    if ( arg_SOURCES )
+        # Don't clean header-only libraries because you would have to handle
+        # the white-list of properties that are allowed
+        blt_clean_target(TARGET ${arg_NAME})
+    endif()
+
 endmacro(blt_add_library)
 
+
 ##------------------------------------------------------------------------------
-## blt_add_executable( NAME <name>
-##                     SOURCES [source1 [source2 ...]]
-##                     INCLUDES [dir1 [dir2 ...]]
-##                     DEFINES [define1 [define2 ...]]
+## blt_add_executable( NAME       <name>
+##                     SOURCES    [source1 [source2 ...]]
+##                     INCLUDES   [dir1 [dir2 ...]]
+##                     DEFINES    [define1 [define2 ...]]
 ##                     DEPENDS_ON [dep1 [dep2 ...]]
 ##                     OUTPUT_DIR [dir]
-##                     FOLDER [name])
+##                     FOLDER     [name])
 ##
-## Adds an executable target, called <name>.
-##
-## The INCLUDES argument allows you to define what include directories are
-## needed to compile this executable.
-##
-## The DEFINES argument allows you to add needed compiler definitions that are
-## needed to compile this executable.
-##
-## If given a DEPENDS_ON argument, it will add the necessary includes and 
-## libraries if they are already registered with blt_register_library.  If
-## not it will add them as a cmake target dependency.
-##
-## The OUTPUT_DIR is used to control the build output directory of this 
-## executable. This is used to overwrite the default bin directory.
-##
-## If the first entry in SOURCES is a Fortran source file, the fortran linker 
-## is used. (via setting the CMake target property LINKER_LANGUAGE to Fortran )
-##
-## FOLDER is an optional keyword to organize the target into a folder in an IDE.
-## This is available when ENABLE_FOLDERS is ON and when using a cmake generator
-## that supports this feature and will otherwise be ignored.
+## Adds an executable target, called <name>, to be built from the given sources.
 ##------------------------------------------------------------------------------
 macro(blt_add_executable)
 
@@ -580,7 +522,7 @@ macro(blt_add_executable)
     cmake_parse_arguments(arg
         "${options}" "${singleValueArgs}" "${multiValueArgs}" ${ARGN})
 
-    # sanity checks
+    # Sanity checks
     if( "${arg_NAME}" STREQUAL "" )
         message(FATAL_ERROR "blt_add_executable() must be called with argument NAME <name>")
     endif()
@@ -589,13 +531,19 @@ macro(blt_add_executable)
         message(FATAL_ERROR "blt_add_executable(NAME ${arg_NAME} ...) given with no sources")
     endif()
 
-    add_executable( ${arg_NAME} ${arg_SOURCES} )
+    if (ENABLE_HIP)
+        blt_add_hip_executable(NAME         ${arg_NAME}
+                               SOURCES      ${arg_SOURCES}
+                               DEPENDS_ON   ${arg_DEPENDS_ON})
+    else()
+        add_executable( ${arg_NAME} ${arg_SOURCES} )
 
-    if (ENABLE_CUDA AND NOT ENABLE_CLANG_CUDA)
-        blt_setup_cuda_target(
-            NAME         ${arg_NAME}
-            SOURCES      ${arg_SOURCES}
-            DEPENDS_ON   ${arg_DEPENDS_ON})
+        if (ENABLE_CUDA AND NOT ENABLE_CLANG_CUDA)
+            blt_setup_cuda_target(
+                NAME         ${arg_NAME}
+                SOURCES      ${arg_SOURCES}
+                DEPENDS_ON   ${arg_DEPENDS_ON})
+        endif()
     endif()
     
     # CMake wants to load with C++ if any of the libraries are C++.
@@ -609,8 +557,9 @@ macro(blt_add_executable)
         target_include_directories(${arg_NAME} PRIVATE ${CMAKE_Fortran_MODULE_DIRECTORY})
     endif()
        
-    blt_setup_target(NAME ${arg_NAME}
-                     DEPENDS_ON ${arg_DEPENDS_ON} )
+    blt_setup_target(NAME       ${arg_NAME}
+                     DEPENDS_ON ${arg_DEPENDS_ON} 
+                     OBJECT     FALSE)
 
     if ( arg_INCLUDES )
         target_include_directories(${arg_NAME} PUBLIC ${arg_INCLUDES})
@@ -635,32 +584,24 @@ macro(blt_add_executable)
 
     blt_update_project_sources( TARGET_SOURCES ${arg_SOURCES} )
 
+    blt_clean_target(TARGET ${arg_NAME})
+
 endmacro(blt_add_executable)
 
 
 ##------------------------------------------------------------------------------
-## blt_add_test( NAME [name] COMMAND [command] NUM_MPI_TASKS [n] )
+## blt_add_test( NAME           [name]
+##               COMMAND        [command] 
+##               NUM_MPI_TASKS  [n]
+##               CONFIGURATIONS [config1 [config2...]])
 ##
-## Adds a CMake test to the project.
-##
-## NAME is used for the name that CTest reports with.
-##
-## COMMAND is the command line that will be used to run the test. This will
-## have the RUNTIME_OUTPUT_DIRECTORY prepended to it to fully qualify the path.
-##
-## NUM_MPI_TASKS indicates this is an MPI test and how many tasks to use. The
-## command line will use MPIEXEC, MPIEXEC_NUMPROC_FLAG, and BLT_MPI_COMMAND_APPEND
-## to create the MPI run line.
-##
-## MPIEXEC and MPIEXEC_NUMPROC_FLAG are filled in by CMake's FindMPI.cmake but can
-## be overwritten in your host-config specific to your platform. BLT_MPI_COMMAND_APPEND
-## is useful on machines that require extra arguments to MPIEXEC.
+## Adds a test to the project.
 ##------------------------------------------------------------------------------
 macro(blt_add_test)
 
     set(options )
     set(singleValueArgs NAME NUM_MPI_TASKS)
-    set(multiValueArgs COMMAND)
+    set(multiValueArgs COMMAND CONFIGURATIONS)
 
     # Parse the arguments to the macro
     cmake_parse_arguments(arg
@@ -703,82 +644,49 @@ macro(blt_add_test)
 
     # Handle MPI
     if ( ${arg_NUM_MPI_TASKS} )
-        set(test_command ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} ${arg_NUM_MPI_TASKS} ${BLT_MPI_COMMAND_APPEND} ${test_command} )
+        # Handle CMake changing MPIEXEC to MPIEXEC_EXECUTABLE
+        if( ${CMAKE_VERSION} VERSION_GREATER_EQUAL "3.10.0" )
+            set(_mpiexec ${MPIEXEC_EXECUTABLE})
+        else()
+            set(_mpiexec ${MPIEXEC})
+        endif()
+
+        set(test_command ${_mpiexec} ${MPIEXEC_NUMPROC_FLAG} ${arg_NUM_MPI_TASKS} ${BLT_MPI_COMMAND_APPEND} ${test_command} )
     endif()
 
-    add_test(NAME ${arg_NAME}
-             COMMAND ${test_command} 
-             )
+    add_test(NAME           ${arg_NAME}
+             COMMAND        ${test_command}
+             CONFIGURATIONS ${arg_CONFIGURATIONS})
 
 endmacro(blt_add_test)
 
 
 ##------------------------------------------------------------------------------
-## blt_add_benchmark( NAME [name] COMMAND [command]  )
+## blt_add_benchmark( NAME          [name] 
+##                    COMMAND       [command]
+##                    NUM_MPI_TASKS [n])
 ##
-## Adds a (google) benchmark test to the project.
-##
-## NAME is used for the name that CTest reports and should include the string 'benchmark'.
-##
-## COMMAND is the command line that will be used to run the test and can include arguments.  
-## This will have the RUNTIME_OUTPUT_DIRECTORY prepended to it to fully qualify the path.
-##
-## The underlying executable (added with blt_add_executable) should include gbenchmark
-## as one of its dependencies.
-##
-##  Example
-##    blt_add_executable(NAME component_benchmark ... DEPENDS gbenchmark)
-##    blt_add_benchmark( 
-##          NAME component_benchmark
-##          COMMAND component_benchmark "--benchmark_min_time=0.0 --v=3 --benchmark_format=json"
-##          )
+## Adds a benchmark to the project.
 ##------------------------------------------------------------------------------
 macro(blt_add_benchmark)
 
-   if(ENABLE_BENCHMARKS)
+    set(options)
+    set(singleValueArgs NAME NUM_MPI_TASKS)      
+    set(multiValueArgs COMMAND)
 
-      set(options)
-      set(singleValueArgs NAME)      
-      set(multiValueArgs COMMAND)
+    ## parse the arguments to the macro
+    cmake_parse_arguments(arg
+     "${options}" "${singleValueArgs}" "${multiValueArgs}" ${ARGN} )
 
-      ## parse the arguments to the macro
-      cmake_parse_arguments(arg
-         "${options}" "${singleValueArgs}" "${multiValueArgs}" ${ARGN} )
-
-      if ( NOT DEFINED arg_NAME )
-          message(FATAL_ERROR "NAME is a required parameter to blt_add_benchmark")
-      endif()
-
-      if ( NOT DEFINED arg_COMMAND )
-          message(FATAL_ERROR "COMMAND is a required parameter to blt_add_benchmark")
-      endif()
-
-      # Generate command
-      if ( NOT TARGET ${arg_NAME} )
-          # Handle case of running multiple tests against one executable, 
-          # the NAME will not be the target
-          list(GET arg_COMMAND 0 executable)
-          get_target_property(runtime_output_directory ${executable} RUNTIME_OUTPUT_DIRECTORY )
-      else()
-          get_target_property(runtime_output_directory ${arg_NAME} RUNTIME_OUTPUT_DIRECTORY )
-      endif()
-      set(test_command ${runtime_output_directory}/${arg_COMMAND} )
-
-      # Note: No MPI handling for now.  If desired, see how this is handled in blt_add_test macro
-
-      # The 'CONFIGURATIONS Benchmark' line excludes benchmarks 
-      # from the general list of tests
-      add_test( NAME ${arg_NAME}
-                COMMAND ${test_command}
-                CONFIGURATIONS Benchmark   
-                )
-
-      if(ENABLE_TESTS)
-        add_dependencies(run_benchmarks ${arg_NAME})
-      endif()
-   endif()
+    # The 'CONFIGURATIONS Benchmark' line excludes benchmarks 
+    # from the general list of tests
+    blt_add_test( NAME           ${arg_NAME}
+                  COMMAND        ${arg_COMMAND}
+                  NUM_MPI_TASKS  ${arg_NUM_MPI_TASKS}
+                  CONFIGURATIONS Benchmark)
 
 endmacro(blt_add_benchmark)
+
 
 ##------------------------------------------------------------------------------
 ## blt_append_custom_compiler_flag( 
@@ -791,19 +699,9 @@ endmacro(blt_add_benchmark)
 ##                    XL         xlFlag         (optional)
 ##                    MSVC       msvcFlag       (optional)
 ##                    MSVC_INTEL msvcIntelFlag  (optional)
-##                    PGI        pgiFlag        (optional)
-## )
+##                    PGI        pgiFlag        (optional))
 ##
 ## Appends compiler-specific flags to a given variable of flags
-##
-## If a custom flag is given for the current compiler, we use that.
-## Otherwise, we will use the DEFAULT flag (if present)
-## If ENABLE_FORTRAN is On, any flagsVar with "fortran" (any capitalization)
-## in its name will pick the compiler family (GNU,CLANG, INTEL, etc) based on
-## the fortran compiler family type. This allows mixing C and Fortran compiler
-## families, e.g. using Intel fortran compilers with clang C compilers. 
-## When using the Intel toolchain within visual studio, we use the 
-## MSVC_INTEL flag, when provided, with a fallback to the MSVC flag.
 ##------------------------------------------------------------------------------
 macro(blt_append_custom_compiler_flag)
 
@@ -867,21 +765,11 @@ endmacro(blt_append_custom_compiler_flag)
 
 ##------------------------------------------------------------------------------
 ## blt_find_libraries( FOUND_LIBS <FOUND_LIBS variable name>
-##                     NAMES [libname1 [libname2 ...]]
-##                     REQUIRED [TRUE (default) | FALSE ]
-##                     PATHS [path1 [path2 ...]] )
+##                     NAMES      [libname1 [libname2 ...]]
+##                     REQUIRED   [TRUE (default) | FALSE ]
+##                     PATHS      [path1 [path2 ...]] )
 ##
 ## This command is used to find a list of libraries.
-## 
-## If the libraries are found the results are appended to the given FOUND_LIBS variable name.
-##
-## NAMES lists the names of the libraries that will be searched for in the given PATHS.
-##
-## If REQUIRED is set to TRUE, BLT will produce an error message if any of the
-## given libraries are not found.  The default value is TRUE.
-##
-## PATH lists the paths in which to search for NAMES. No system paths will be searched.
-##
 ##------------------------------------------------------------------------------
 macro(blt_find_libraries)
 
@@ -933,8 +821,7 @@ endmacro(blt_find_libraries)
 ##                               SOURCE_LIBS [lib1 ...] 
 ##                               LIB_TYPE [STATIC,SHARED]
 ##                               LINK_PREPEND []
-##                               LINK_POSTPEND []
-##                             )
+##                               LINK_POSTPEND [])
 ##
 ## Adds a library target, called <libname>, to be built from the set of 
 ## static libraries given in SOURCE_LIBS.
@@ -956,7 +843,7 @@ macro(blt_combine_static_libraries)
     cmake_parse_arguments(arg
         "${options}" "${singleValueArgs}" "${multiValueArgs}" ${ARGN} )
 
-    # sanity checks
+    # Sanity checks
     if( "${arg_NAME}" STREQUAL "" )
         message(FATAL_ERROR "blt_combine_static_libraries() must be called with argument NAME <name>")
     endif()
@@ -1085,8 +972,8 @@ macro(blt_combine_static_libraries)
     endforeach()
     
     # Remove duplicates from the includes
-    list( REMOVE_DUPLICATES interface_include_directories )
-    list( REMOVE_DUPLICATES interface_system_include_directories )
+    blt_list_remove_duplicates(TO interface_include_directories )
+    blt_list_remove_duplicates(TO interface_system_include_directories )
 
     # Remove any system includes from the regular includes
     foreach( include_dir ${interface_system_include_directories} )
@@ -1112,18 +999,10 @@ macro(blt_combine_static_libraries)
 endmacro(blt_combine_static_libraries)
 
 
-
 ##------------------------------------------------------------------------------
-## blt_print_target_properties (TARGET <target> )
+## blt_print_target_properties(TARGET <target> )
 ##
 ## Prints out all properties of the given target.
-##
-## The required target parameteter must either be a valid cmake target 
-## or was registered via blt_register_library.
-##
-## Output is of the form:
-##     [<target> property] <property>: <value>
-## for each property
 ##------------------------------------------------------------------------------
 macro(blt_print_target_properties)
 
@@ -1168,7 +1047,7 @@ macro(blt_print_target_properties)
         string(REGEX REPLACE ";" "\\\\;" _property_list "${_property_list}")
         string(REGEX REPLACE "\n" ";" _property_list "${_property_list}")
         blt_filter_list(TO _property_list REGEX "^LOCATION$|^LOCATION_|_LOCATION$" OPERATION "exclude")
-        list(REMOVE_DUPLICATES _property_list)   
+        blt_list_remove_duplicates(TO _property_list)   
 
         ## For interface targets, filter against whitelist of valid properties
         get_property(_targetType TARGET ${arg_TARGET} PROPERTY TYPE)
@@ -1198,7 +1077,7 @@ macro(blt_print_target_properties)
         ## Filter to get variables of the form BLT_<target>_ and print
         get_cmake_property(_variable_names VARIABLES)
         foreach (prop ${_variable_names})
-            if(prop MATCHES "${_target_prefix}?")
+            if(prop MATCHES "^${_target_prefix}")
                 message (STATUS "[${arg_TARGET} property] ${prop}: ${${prop}}")
             endif()
         endforeach()
@@ -1210,4 +1089,3 @@ macro(blt_print_target_properties)
     unset(_is_blt_registered_target)
     unset(_is_cmake_target)
 endmacro(blt_print_target_properties)
-

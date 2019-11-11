@@ -8,6 +8,7 @@ set(SAMRAI_VERSION_PATCHLEVEL 1)
 set(SAMRAI_VERSION
   "${SAMRAI_VERSION_MAJOR}.${SAMRAI_VERSION_MINOR}.${SAMRAI_VERSION_PATCHLEVEL}")
 
+
 cmake_policy(SET CMP0057 NEW)
 
 if (NOT EXISTS ${PROJECT_SOURCE_DIR}/blt/SetupBLT.cmake)
@@ -51,7 +52,6 @@ set(CMAKE_CUDA_FLAGS "" CACHE STRING "")
 include(GNUInstallDirs)
 
 include(blt/SetupBLT.cmake)
-
 
 # Set specific options for CUDA if enabled
 if (ENABLE_RAJA AND ENABLE_CUDA)

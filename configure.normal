@@ -2,7 +2,7 @@
 
 prefix=$(pwd)
 
-clear=false
+clear_build_dir=false
 mode=Release
 profile=$(hostname)
 cuda_arch=sm_70
@@ -16,7 +16,10 @@ shared=OFF
 cmake_cxx_standard="14"
 blt_cxx_std="c++14"
 
-export CXX=`which g++`
+export CXX=`which icpc`
+export CC=`which icc`
+export FC=`which ifort`
+export F90=`which ifort`
 
 while getopts d:na:hm:cp:rs opt; do
     case $opt in
@@ -38,7 +41,7 @@ while getopts d:na:hm:cp:rs opt; do
             enable_cuda=OFF
             ;;
         c)
-            clear=true
+            clear_build_dir=true
             ;;
         p)
             profile=$OPTARG
@@ -94,11 +97,31 @@ echo "cmake_cxx_standard =${cmake_cxx_standard}"
 echo "blt_cxx_std        =${blt_cxx_std}"
 echo "-----"
 
-if [ "$clear" = true ]; then
-    rm -r $build_dir
+if [ "$clear_build_dir" = true ]; then
+    echo "Wiping out the build and install locations."
+    echo "    Build ....:  rm -rf ${build_dir}"
+    rm -rf $build_dir
+    echo "    Install ..:  rm -rf ${install_dir}"
+    rm -rf $install_dir
 fi
 
 mkdir -p $build_dir
+mkdir -p $install_dir
+
+export INTEL_OPT_FLAGS="  "
+export INTEL_OPT_FLAGS="${INTEL_OPT_FLAGS} -qoverride-limits "
+export INTEL_OPT_FLAGS="${INTEL_OPT_FLAGS} -no-inline-factor "
+export INTEL_OPT_FLAGS="${INTEL_OPT_FLAGS} -no-inline-max-per-compile "
+export INTEL_OPT_FLAGS="${INTEL_OPT_FLAGS} -no-inline-max-per-routine "
+export INTEL_OPT_FLAGS="${INTEL_OPT_FLAGS} -no-inline-max-size "
+export INTEL_OPT_FLAGS="${INTEL_OPT_FLAGS} -no-inline-max-total-size "
+export INTEL_OPT_FLAGS="${INTEL_OPT_FLAGS} -no-inline-min-size "
+export INTEL_OPT_FLAGS="${INTEL_OPT_FLAGS} -qopt-report=5 "
+export INTEL_OPT_FLAGS="${INTEL_OPT_FLAGS} -qopt-report-file=$prefix/intel/$mode.normal.opt.$pkg.out "
+
+export CXX_FLAGS=" ${INTEL_OPT_FLAGS} ${CXX_FLAGS} "
+export CXXFLAGS="  ${INTEL_OPT_FLAGS} ${CXXFLAGS}  "
+
 
 if [ "$pkg" = RAJA ]; then
     cd $build_dir
@@ -112,6 +135,10 @@ if [ "$pkg" = RAJA ]; then
           -D BUILD_SHARED_LIBS=$shared \
           -D APOLLO_DIR=/g/g17/wood67/src/apollo/install \
           -D ENABLE_APOLLO=$enable_apollo \
+          -D OpenMP_CXX_FLAGS="-fopenmp" \
+          -D OpenMP_C_FLAGS="-fopenmp" \
+          -D OpenMP_Fortran_FLAGS="-fopenmp" \
+          -D BLT_OPENMP_COMPILE_FLAGS="-fopenmp" \
           -D RAJA_ENABLE_OPENMP=$enable_omp \
           -D ENABLE_OPENMP=$enable_omp \
           -D ENABLE_CUDA=$enable_cuda \
@@ -128,6 +155,10 @@ elif [ "$pkg" = hdf5 ]; then
           -D CMAKE_BUILD_TYPE=$mode \
           -D APOLLO_DIR=/g/g17/wood67/src/apollo/install \
           -D ENABLE_APOLLO=$enable_apollo \
+          -D OpenMP_CXX_FLAGS="-fopenmp" \
+          -D OpenMP_C_FLAGS="-fopenmp" \
+          -D OpenMP_Fortran_FLAGS="-fopenmp" \
+          -D BLT_OPENMP_COMPILE_FLAGS="-fopenmp" \
           -D RAJA_ENABLE_OPENMP=$enable_omp \
           -D ENABLE_OPENMP=$enable_omp \
           -D HDF5_BUILD_TOOLS=OFF \
@@ -145,6 +176,10 @@ elif [ "$pkg" = Umpire ]; then
           -D BUILD_SHARED_LIBS=$shared \
           -D APOLLO_DIR=/g/g17/wood67/src/apollo/install \
           -D ENABLE_APOLLO=$enable_apollo \
+          -D OpenMP_CXX_FLAGS="-fopenmp" \
+          -D OpenMP_C_FLAGS="-fopenmp" \
+          -D OpenMP_Fortran_FLAGS="-fopenmp" \
+          -D BLT_OPENMP_COMPILE_FLAGS="-fopenmp" \
           -D RAJA_ENABLE_OPENMP=$enable_omp \
           -D ENABLE_OPENMP=$enable_omp \
           -D ENABLE_CUDA=$enable_cuda \
@@ -152,29 +187,33 @@ elif [ "$pkg" = Umpire ]; then
           $source_dir
 elif [ "$pkg" = SAMRAI ]; then
     cd $build_dir
-    export CXXFLAGS=" -fpermissive "
+    export CXXFLAGS=" ${CXXFLAGS} -fpermissive "
     cmake -Wno-dev \
           -D BLT_CXX_STD=$blt_cxx_std \
           -D CMAKE_CXX_STANDARD=$cmake_cxx_standard \
           -D CMAKE_CXX_COMPILER=$CXX \
           -D CMAKE_BUILD_TYPE=$mode \
           -D CMAKE_INSTALL_PREFIX=$install_dir \
-          -D CMAKE_Fortran_COMPILER=`which gfortran` \
+          -D CMAKE_Fortran_COMPILER=$FC \
           -D BUILD_SHARED_LIBS=$shared \
           -D CUDA_ARCH=$cuda_arch \
-          -D MPI_Fortran_COMPILER=mpifort \
+          -D ENABLE_MPI=ON \
+          -D ENABLE_FIND_MPI=ON \
+          -D MPI_C_COMPILER=/usr/tce/packages/mvapich2/mvapich2-2.3-intel-19.0.4/bin/mpicc \
+          -D MPI_CXX_COMPILER=/usr/tce/packages/mvapich2/mvapich2-2.3-intel-19.0.4/bin/mpicxx \
+          -D MPI_Fortran_COMPILER=/usr/tce/packages/mvapich2/mvapich2-2.3-intel-19.0.4/bin/mpifort \
           -D HDF5_DIR=$dep_install_prefix/hdf5/share/cmake \
           -D RAJA_DIR=$dep_install_prefix/RAJA/share/raja/cmake \
           -D umpire_DIR=$dep_install_prefix/Umpire/share/umpire/cmake \
           -D APOLLO_DIR=/g/g17/wood67/src/apollo/install \
           -D ENABLE_APOLLO=$enable_apollo \
-          -D OpenMP_lomp_LIBRARY=-lomp \
-          -D OpenMP_Fortran_LIB_NAMES="lomp" \
+          -D OpenMP_CXX_FLAGS="-fopenmp" \
+          -D OpenMP_C_FLAGS="-fopenmp" \
           -D OpenMP_Fortran_FLAGS="-fopenmp" \
+          -D BLT_OPENMP_COMPILE_FLAGS="-fopenmp" \
           -D RAJA_ENABLE_OPENMP=$enable_omp \
           -D ENABLE_OPENMP=$enable_omp \
           -D ENABLE_DOXYGEN=OFF \
-          -D ENABLE_MPI=ON \
           -D ENABLE_CUDA=$enable_cuda \
           -D ENABLE_NVTX_REGIONS=$enable_nvtx \
           -D ENABLE_HDF5=ON \
@@ -185,7 +224,7 @@ elif [ "$pkg" = SAMRAI ]; then
           $source_dir
 elif [ "$pkg" = cleverleaf ]; then
     cd $build_dir
-    export CXXFLAGS=" -fpermissive "
+    export CXXFLAGS=" ${CXXFLAGS} -fpermissive "
     cmake -Wno-dev \
           -D BLT_CXX_STD=$blt_cxx_std \
           -D CMAKE_CXX_STANDARD=$cmake_cxx_standard \
@@ -197,6 +236,10 @@ elif [ "$pkg" = cleverleaf ]; then
           -D BUILD_SHARED_LIBS=$shared \
           -D APOLLO_DIR=/g/g17/wood67/src/apollo/install \
           -D ENABLE_APOLLO=$enable_apollo \
+          -D OpenMP_CXX_FLAGS="-fopenmp" \
+          -D OpenMP_C_FLAGS="-fopenmp" \
+          -D OpenMP_Fortran_FLAGS="-fopenmp" \
+          -D BLT_OPENMP_COMPILE_FLAGS="-fopenmp" \
           -D HDF5_DIR=$dep_install_prefix/hdf5/share/cmake \
           -D RAJA_DIR=$dep_install_prefix/RAJA/share/raja/cmake \
           -D umpire_DIR=$dep_install_prefix/Umpire/share/umpire/cmake \

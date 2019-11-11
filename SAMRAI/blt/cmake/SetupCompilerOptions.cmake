@@ -1,44 +1,7 @@
-###############################################################################
-# Copyright (c) 2017, Lawrence Livermore National Security, LLC.
-#
-# Produced at the Lawrence Livermore National Laboratory
-#
-# LLNL-CODE-725085
-#
-# All rights reserved.
-#
-# This file is part of BLT.
-#
-# For additional details, please also read BLT/LICENSE.
-#
-# Redistribution and use in source and binary forms, with or without
-# modification, are permitted provided that the following conditions are met:
-#
-# * Redistributions of source code must retain the above copyright notice,
-#   this list of conditions and the disclaimer below.
-#
-# * Redistributions in binary form must reproduce the above copyright notice,
-#   this list of conditions and the disclaimer (as noted below) in the
-#   documentation and/or other materials provided with the distribution.
-#
-# * Neither the name of the LLNS/LLNL nor the names of its contributors may
-#   be used to endorse or promote products derived from this software without
-#   specific prior written permission.
-#
-# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
-# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
-# ARE DISCLAIMED. IN NO EVENT SHALL LAWRENCE LIVERMORE NATIONAL SECURITY,
-# LLC, THE U.S. DEPARTMENT OF ENERGY OR CONTRIBUTORS BE LIABLE FOR ANY
-# DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
-# DAMAGES  (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
-# OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
-# HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
-# STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING
-# IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-# POSSIBILITY OF SUCH DAMAGE.
-#
-###############################################################################
+# Copyright (c) 2017-2019, Lawrence Livermore National Security, LLC and
+# other BLT Project Developers. See the top-level COPYRIGHT file for details
+# 
+# SPDX-License-Identifier: (BSD-3-Clause)
 
 ############################
 # Setup compiler options
@@ -109,47 +72,6 @@ else()
 
     elseif(ENABLE_FORTRAN)
         message(STATUS "Fortran Compiler family not set!!!")
-    endif()
-endif()
-
-
-#################################################
-# OpenMP
-# (OpenMP support is provided by the compiler)
-#################################################
-message(STATUS "OpenMP Support is ${ENABLE_OPENMP}")
-if(ENABLE_OPENMP)
-    find_package(OpenMP REQUIRED)
-    message(STATUS "OpenMP CXX Flags: ${OpenMP_CXX_FLAGS}")
-    
-    # register openmp with blt
-    if(NOT COMPILER_FAMILY_IS_MSVC AND ENABLE_CUDA AND ENABLE_FORTRAN)
-        blt_register_library(NAME openmp
-                             COMPILE_FLAGS
-                             $<$<AND:$<NOT:$<COMPILE_LANGUAGE:CUDA>>,$<NOT:$<COMPILE_LANGUAGE:CUDA>>>:${OpenMP_CXX_FLAGS}> 
-                             $<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler=${OpenMP_CXX_FLAGS}>
-                             $<$<COMPILE_LANGUAGE:Fortran>:${OpenMP_Fortran_FLAGS}> 
-                             LINK_FLAGS ${OpenMP_CXX_FLAGS}
-                             )
-    elseif(NOT COMPILER_FAMILY_IS_MSVC AND ENABLE_CUDA)
-        blt_register_library(NAME openmp
-                             COMPILE_FLAGS
-                             $<$<NOT:$<COMPILE_LANGUAGE:CUDA>>:${OpenMP_CXX_FLAGS}> 
-                             $<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler=${OpenMP_CXX_FLAGS}> 
-                             LINK_FLAGS ${OpenMP_CXX_FLAGS}
-                             )
-    elseif(NOT COMPILER_FAMILY_IS_MSVC AND ENABLE_FORTRAN)
-        blt_register_library(NAME openmp
-                             COMPILE_FLAGS
-                             $<$<NOT:$<COMPILE_LANGUAGE:Fortran>>:${OpenMP_CXX_FLAGS}>
-                             $<$<COMPILE_LANGUAGE:Fortran>:${OpenMP_Fortran_FLAGS}> 
-                             LINK_FLAGS ${OpenMP_CXX_FLAGS}
-                             )
-    else()
-        blt_register_library(NAME openmp
-                             COMPILE_FLAGS ${OpenMP_CXX_FLAGS}
-                             LINK_FLAGS ${OpenMP_CXX_FLAGS}
-                             )
     endif()
 endif()
 
@@ -304,40 +226,57 @@ if(BUILD_SHARED_LIBS)
 endif()
 
 ################################
-# Enable C++11/14
+# C++ Standard
 ################################
 
 SET( CMAKE_CXX_EXTENSIONS OFF )
 SET( CMAKE_CXX_STANDARD_REQUIRED ON )
 
-if( BLT_CXX_STD STREQUAL c++98 ) 
-    set(CMAKE_CXX_STANDARD 98)
-elseif( BLT_CXX_STD STREQUAL c++11 )
-    set(CMAKE_CXX_STANDARD 11)
-    if (ENABLE_CUDA)
-       set(CMAKE_CUDA_STANDARD 11)
-    endif()
-    blt_append_custom_compiler_flag(
-        FLAGS_VAR CMAKE_CXX_FLAGS
-        DEFAULT " "
-        XL "-std=c++11"
-        PGI "--c++11")
-elseif( BLT_CXX_STD STREQUAL c++14)
-    set(CMAKE_CXX_STANDARD 14)
-    if (ENABLE_CUDA)
-       set(CMAKE_CUDA_STANDARD 14)
-    endif()
-    blt_append_custom_compiler_flag(
-        FLAGS_VAR CMAKE_CXX_FLAGS
-        DEFAULT " "
-        XL "-std=c++1y"
-        PGI "--c++14")
-else()
-    message(FATAL_ERROR "${BLT_CXX_STD} is an invalid entry for BLT_CXX_STD.
-    Valid Options are ( c++98, c++11, c++14 )")
-endif()
+set(BLT_CXX_STD "" CACHE STRING "Version of C++ standard")
+set_property(CACHE BLT_CXX_STD PROPERTY STRINGS c++98 c++11 c++14 c++17)
 
-message(STATUS "Standard C++${CMAKE_CXX_STANDARD} selected") 
+if (BLT_CXX_STD)
+    if( BLT_CXX_STD STREQUAL c++98 ) 
+        set(CMAKE_CXX_STANDARD 98)
+    elseif( BLT_CXX_STD STREQUAL c++11 )
+        set(CMAKE_CXX_STANDARD 11)
+        blt_append_custom_compiler_flag(
+            FLAGS_VAR CMAKE_CXX_FLAGS
+            DEFAULT " "
+            XL "-std=c++11"
+            PGI "--c++11")
+    elseif( BLT_CXX_STD STREQUAL c++14)
+        set(CMAKE_CXX_STANDARD 14)
+        blt_append_custom_compiler_flag(
+            FLAGS_VAR CMAKE_CXX_FLAGS
+            DEFAULT " "
+            XL "-std=c++1y"
+            PGI "--c++14")
+    elseif( BLT_CXX_STD STREQUAL c++17)
+        # Error out on what does not support C++17
+        if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "XL")
+            message(FATAL_ERROR "XL does not support C++17.")
+        endif()
+        if (ENABLE_CUDA)
+            message(FATAL_ERROR "CMake's CUDA_STANDARD does not support C++17.")
+        endif()
+
+        set(CMAKE_CXX_STANDARD 17)
+        blt_append_custom_compiler_flag(
+            FLAGS_VAR CMAKE_CXX_FLAGS
+            DEFAULT " "
+            PGI "--c++17")
+    else()
+        message(FATAL_ERROR "${BLT_CXX_STD} is an invalid entry for BLT_CXX_STD. "
+                            "Valid Options are ( c++98, c++11, c++14, c++17 )")
+    endif()
+
+    if (ENABLE_CUDA)
+       set(CMAKE_CUDA_STANDARD ${CMAKE_CXX_STANDARD})
+    endif()
+
+    message(STATUS "Standard C++${CMAKE_CXX_STANDARD} selected") 
+endif()
 
 
 ##################################################################
@@ -345,7 +284,7 @@ message(STATUS "Standard C++${CMAKE_CXX_STANDARD} selected")
 ##################################################################
 
 blt_append_custom_compiler_flag(
-    FLAGS_VAR BLT_ENABLE_ALL_WARNINGS_FLAG
+   FLAGS_VAR BLT_ENABLE_ALL_WARNINGS_C_FLAG
      DEFAULT    "-Wall -Wextra"
      CLANG      "-Wall -Wextra" 
                        # Additional  possibilities for clang include: 
@@ -362,9 +301,34 @@ blt_append_custom_compiler_flag(
      )
 
 blt_append_custom_compiler_flag(
-    FLAGS_VAR BLT_WARNINGS_AS_ERRORS_FLAG
+    FLAGS_VAR BLT_ENABLE_ALL_WARNINGS_CXX_FLAG
+     DEFAULT    "-Wall -Wextra"
+     CLANG      "-Wall -Wextra" 
+                       # Additional  possibilities for clang include: 
+                       #       "-Wdocumentation -Wdeprecated -Weverything"
+     HCC        "-Wall" 
+     PGI        "-Minform=warn"
+     MSVC       "/W4"
+                       # Additional  possibilities for visual studio include:
+                       # "/Wall /wd4619 /wd4668 /wd4820 /wd4571 /wd4710"
+     XL         " "    # qinfo=<grp> produces additional messages on XL
+                       # qflag=<x>:<x> defines min severity level to produce messages on XL
+                       #     where x is i info, w warning, e error, s severe; default is: 
+                       # (default is  qflag=i:i)
+     )
+
+blt_append_custom_compiler_flag(
+    FLAGS_VAR BLT_WARNINGS_AS_ERRORS_CXX_FLAG
      DEFAULT  "-Werror"
      MSVC     "/WX"
+     XL       "-qhalt=w"
+     )
+
+blt_append_custom_compiler_flag(
+    FLAGS_VAR BLT_WARNINGS_AS_ERRORS_C_FLAG
+     DEFAULT  "-Werror"
+     MSVC     "/WX"
+     PGI      " "
      XL       "-qhalt=w"
      )
 
@@ -374,13 +338,16 @@ blt_append_custom_compiler_flag(
 #
 
 if ( COMPILER_FAMILY_IS_MSVC AND NOT BUILD_SHARED_LIBS )
-    foreach(flag_var
-            CMAKE_CXX_FLAGS CMAKE_CXX_FLAGS_DEBUG CMAKE_CXX_FLAGS_RELEASE
-            CMAKE_CXX_FLAGS_MINSIZEREL CMAKE_CXX_FLAGS_RELWITHDEBINFO)
-        if(${flag_var} MATCHES "/MD")
-            string(REGEX REPLACE "/MD" "/MT" ${flag_var} "${${flag_var}}")
-        endif(${flag_var} MATCHES "/MD")
-    endforeach(flag_var)
+  foreach(_lang C CXX)
+    foreach(_build
+            FLAGS FLAGS_DEBUG FLAGS_RELEASE
+            FLAGS_MINSIZEREL FLAGS_RELWITHDEBINFO)
+        set(_flag CMAKE_${_lang}_${_build})
+        if(${_flag} MATCHES "/MD")
+            string(REGEX REPLACE "/MD" "/MT" ${_flag} "${${_flag}}")
+        endif()
+    endforeach()
+  endforeach()
 endif()
 
 set(langFlags "CMAKE_C_FLAGS" "CMAKE_CXX_FLAGS")
@@ -388,17 +355,16 @@ set(langFlags "CMAKE_C_FLAGS" "CMAKE_CXX_FLAGS")
 if (ENABLE_ALL_WARNINGS)
     message(STATUS  "Enabling all compiler warnings on all targets.")
 
-    foreach(flagVar ${langFlags})
-        set(${flagVar} "${${flagVar}} ${BLT_ENABLE_ALL_WARNINGS_FLAG}") 
-    endforeach()
+
+    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${BLT_ENABLE_ALL_WARNINGS_CXX_FLAG}")
+    set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${BLT_ENABLE_ALL_WARNINGS_C_FLAG}")
 endif()
 
 if (ENABLE_WARNINGS_AS_ERRORS)
     message(STATUS  "Enabling treatment of warnings as errors on all targets.")
 
-    foreach(flagVar ${langFlags})   
-        set(${flagVar} "${${flagVar}} ${BLT_WARNINGS_AS_ERRORS_FLAG}") 
-    endforeach()
+    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${BLT_WARNINGS_AS_ERRORS_CXX_FLAG}")
+    set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${BLT_WARNINGS_AS_ERRORS_C_FLAG}")
 endif()
 
 ################################

@@ -1,44 +1,7 @@
-###############################################################################
-# Copyright (c) 2017-2018, Lawrence Livermore National Security, LLC.
-#
-# Produced at the Lawrence Livermore National Laboratory
-#
-# LLNL-CODE-725085
-#
-# All rights reserved.
-#
-# This file is part of BLT.
-#
-# For additional details, please also read BLT/LICENSE.
-#
-# Redistribution and use in source and binary forms, with or without
-# modification, are permitted provided that the following conditions are met:
-#
-# * Redistributions of source code must retain the above copyright notice,
-#   this list of conditions and the disclaimer below.
-#
-# * Redistributions in binary form must reproduce the above copyright notice,
-#   this list of conditions and the disclaimer (as noted below) in the
-#   documentation and/or other materials provided with the distribution.
-#
-# * Neither the name of the LLNS/LLNL nor the names of its contributors may
-#   be used to endorse or promote products derived from this software without
-#   specific prior written permission.
-#
-# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
-# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
-# ARE DISCLAIMED. IN NO EVENT SHALL LAWRENCE LIVERMORE NATIONAL SECURITY,
-# LLC, THE U.S. DEPARTMENT OF ENERGY OR CONTRIBUTORS BE LIABLE FOR ANY
-# DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
-# DAMAGES  (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
-# OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
-# HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
-# STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING
-# IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-# POSSIBILITY OF SUCH DAMAGE.
-#
-###############################################################################
+# Copyright (c) 2017-2019, Lawrence Livermore National Security, LLC and
+# other BLT Project Developers. See the top-level COPYRIGHT file for details
+# 
+# SPDX-License-Identifier: (BSD-3-Clause)
 
 set(_blt_tpl_targets) # tracks names of enabled tpl targets
 
@@ -61,6 +24,10 @@ if(ENABLE_TESTS)
         list(APPEND gtest_defines "-DGTEST_HAS_DEATH_TEST=1")
     else()
         list(APPEND gtest_defines "-DGTEST_HAS_DEATH_TEST=0")
+    endif()
+
+    if(gtest_disable_pthreads)
+      list(APPEND gtest_defines "-DGTEST_HAS_PTHREAD=0")
     endif()
 
     #
@@ -154,33 +121,36 @@ if(ENABLE_TESTS)
 endif()
 
 if(ENABLE_BENCHMARKS)
-    if(WIN32 AND BUILD_SHARED_LIBS)
-      message(FATAL_ERROR "Benchmarks cannot be built when BUILD_SHARED_LIBS=On")
+    if(NOT ENABLE_TESTS)
+        message(FATAL_ERROR "ENABLE_BENCHMARKS requires ENABLE_TESTS to be ON")
     endif()
 
-    ## google benchmark support
-    add_subdirectory(gbenchmark-master-2017-05-19
-                     ${BLT_BUILD_DIR}/thirdparty_builtin/gbenchmark-master-2017-05-19)
+    message(STATUS "Google Benchmark Support is ${ENABLE_GBENCHMARK}")
 
-    if (UNIX AND NOT APPLE)
-      find_library(RT_LIBRARIES rt)
+    if(ENABLE_GBENCHMARK)
+        if(WIN32 AND BUILD_SHARED_LIBS)
+          message(FATAL_ERROR "Google Benchmark cannot be built when BUILD_SHARED_LIBS=ON or on Windows")
+        endif()
+
+        add_subdirectory(gbenchmark-master-2017-05-19
+                         ${BLT_BUILD_DIR}/thirdparty_builtin/gbenchmark-master-2017-05-19)
+
+        if (UNIX AND NOT APPLE)
+          find_library(RT_LIBRARIES rt)
+        endif()
+
+        blt_register_library(NAME      gbenchmark
+                             INCLUDES  ${benchmark_SOURCE_DIR}/include ${benchmark_SOURCE_DIR}
+                             LIBRARIES benchmark ${RT_LIBRARIES}
+                             TREAT_INCLUDES_AS_SYSTEM ON)
+
+        list(APPEND _blt_tpl_targets gbenchmark)
     endif()
 
-    blt_register_library(NAME gbenchmark
-                         INCLUDES ${benchmark_SOURCE_DIR}/include ${benchmark_SOURCE_DIR}
-                         LIBRARIES benchmark ${RT_LIBRARIES}
-                         TREAT_INCLUDES_AS_SYSTEM ON
-                         )
-
-    list(APPEND _blt_tpl_targets benchmark)
-
-    if(ENABLE_TESTS)
-      # This sets up a target to run the benchmarks
-      add_custom_target(run_benchmarks 
-                        COMMAND ctest -C Benchmark -VV -R benchmark
-                        WORKING_DIRECTORY ${PROJECT_BINARY_DIR}
-                        )
-    endif()
+    # This sets up a target to run the benchmarks
+    add_custom_target(${BLT_RUN_BENCHMARKS_TARGET_NAME}
+                      COMMAND ctest -C Benchmark -VV
+                      WORKING_DIRECTORY ${PROJECT_BINARY_DIR})
 endif()
 
 # Set the folder property of the blt thirdparty libraries 

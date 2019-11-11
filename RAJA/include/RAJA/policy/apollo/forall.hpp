@@ -115,9 +115,10 @@ RAJA_INLINE void apolloPolicySwitcher(int policy, int tc[], BODY body) {
                   //       used in the training, if policy zero got recommended.
                   // NOTE: It is not advised for policy 0 to be used in
                   //       exhaustive searches when building models.
-                  APOLLO_OMP_EXEC(apollo->ompDefaultNumThreads,
-                                  apollo->ompDefaultSchedule,
-                                  -1, body);
+                  //APOLLO_OMP_EXEC(apollo->ompDefaultNumThreads,
+                  //                apollo->ompDefaultSchedule,
+                  //                -1, body);
+                  body(apolloPolicyOpenMP{});
                   break;
         case   1: // The 1st policy is a Sequential option, which will come into
                   // play for iterations when the number of elements a loop is
@@ -221,6 +222,7 @@ RAJA_INLINE void forall_impl(const apollo_exec &, Iterable &&iter, Func &&body)
     static Apollo         *apollo             = Apollo::instance();
     static Apollo::Region *apolloRegion       = nullptr;
     static int             apollo_exec_count  = 0;
+    static int             prev_policy        = 0;
     static int             policy_index       = 0;
     static int             th_count_opts[6]   = {2, 2, 2, 2, 2, 2};
     if (apolloRegion == nullptr) {
@@ -249,15 +251,15 @@ RAJA_INLINE void forall_impl(const apollo_exec &, Iterable &&iter, Func &&body)
     double num_elements = 0.0;
     num_elements = (double) std::distance(std::begin(iter), std::end(iter));
 
-    apolloregion->begin();
-    apollo->setfeature("num_elements", num_elements);
+    apolloRegion->begin();
+    apollo->setFeature("num_elements", num_elements);
 
-    policy_index = apolloregion->getpolicyindex();
+    policy_index = apolloRegion->getPolicyIndex();
 
-    apollopolicyswitcher(policy_index, th_count_opts, [=] (auto pol) mutable {
+    apolloPolicySwitcher(policy_index, th_count_opts, [=] (auto pol) mutable {
             forall_impl(pol, iter, body); });
 
-    apolloregion->end();
+    apolloRegion->end();
 
 }
 

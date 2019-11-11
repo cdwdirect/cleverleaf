@@ -16,6 +16,7 @@
 // CleverLeaf. If not, see http://www.gnu.org/licenses/.
 //////////////////////////////////////////////////////////////////////////////
 #include <iostream>
+#include <limits>
 #include <cstdlib>
 #include <string>
 #include <fstream>
@@ -43,7 +44,7 @@
 #ifdef ENABLE_APOLLO
 #include "apollo/Apollo.h"
 #ifndef VERSION
-#define VERSION   "Apollo"
+#define VERSION   "APOLLO"
 #endif
 #define APOLLO_TIME(__APOLLO_dbl_var)                                \
     {                                                                \
@@ -54,10 +55,7 @@
 #endif
 
 #ifndef VERSION
-#define VERSION   "Normal"
-#endif
-#ifndef HOST_NAME
-#define HOST_NAME "localhost"
+#define VERSION   "NORMAL"
 #endif
 
 using namespace SAMRAI;
@@ -133,20 +131,6 @@ int main(int argc, char* argv[]) {
                  << " <input filename>" << std::endl;
       return 1;
     }
-
-    //tbox::pout << "CleverLeaf version " << VERSION
-    //           << " compiled on " << HOST_NAME << std::endl;
-    //tbox::pout << "Running with " << mpi.getSize() << " tasks" << std::endl;
-//#if defined(_OPENMP)
-//#pragma omp parallel
-//    {
-//#pragma omp master
-//      { tbox::pout << " and " << omp_get_num_threads() << " of ";
-//          tbox::pout << omp_get_max_threads() << " threads";
-//      }
-//    }
-//#endif
-//    tbox::pout << std::endl;
 
     tbox::plog << "Reading input from: " << input_path << std::endl;
 
@@ -337,11 +321,25 @@ int main(int argc, char* argv[]) {
     double step_exec_start = 0.0;
     double step_exec_total = 0.0;
 
-#ifdef ENABLE_APOLLO
-    tbox::pout << "CSV,build,policy_index,schedule,step,step_exec_time,sim_time_start,sim_time_done,current_dt,apollo_xmit_time" << std::endl;
-#else
-    tbox::pout << "CSV,build,omp_threads,schedule,step,step_exec_time,sim_time_start,sim_time_done,current_dt,apollo_xmit_time" << std::endl;
-#endif
+    tbox::pout << "CSV,build,policy_index,schedule,step,step_exec_time," \
+        "sim_time_start,sim_time_done,current_dt,apollo_xmit_time" << std::endl;
+
+    std::string omp_thread_setting;
+    if (getenv("OMP_NUM_THREADS") != NULL) {
+        omp_thread_setting = getenv("OMP_NUM_THREADS");
+    } else {
+        omp_thread_setting = "-1";
+    }
+
+    std::string omp_schedule_setting;
+    if (getenv("OMP_SCHEDULE") != NULL) {
+        omp_schedule_setting = getenv("OMP_SCHEDULE");
+    } else {
+        omp_schedule_setting = "none";
+    }
+
+    std::cout.precision(17);
+
     while ((loop_time < loop_time_end) &&
            lagrangian_eulerian_integrator->stepsRemaining()) {
 
@@ -374,22 +372,22 @@ int main(int argc, char* argv[]) {
       APOLLO_TIME(APOLLO_time_after_flush);
       APOLLO_time_this_step = (APOLLO_time_after_flush - APOLLO_time_before_flush);
       APOLLO_time_cumulative += APOLLO_time_this_step;
-      tbox::pout << "CSV,APOLLO" \
-          << "," << getenv("APOLLO_POLICY_INDEX") \
+      tbox::pout << "CSV," << VERSION \
+          << ",apollo" \
           << ",apollo" \
           << "," << (iteration_num - 1) \
-          << "," << step_exec_total \
+          << "," << std::fixed << step_exec_total \
           << "," << loop_time_start \
           << "," << loop_time_stop \
           << "," << dt_now \
-          << "," << APOLLO_time_this_step \
+          << "," << std::fixed << APOLLO_time_this_step \
           << std::endl;
 #else
-      tbox::pout << "CSV, NORMAL" \
-          << "," << getenv("OMP_NUM_THREADS") \
-          << "," << getenv("OMP_SCHEDULE") \
+      tbox::pout << "CSV," << VERSION \
+          << "," << omp_thread_setting \
+          << "," << omp_schedule_setting \
           << "," << (iteration_num - 1) \
-          << "," << step_exec_total \
+          << "," << std::fixed << step_exec_total \
           << "," << loop_time_start \
           << "," << loop_time_stop \
           << "," << dt_now \

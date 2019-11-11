@@ -1,57 +1,19 @@
-###############################################################################
-# Copyright (c) 2017-2018, Lawrence Livermore National Security, LLC.
-#
-# Produced at the Lawrence Livermore National Laboratory
-#
-# LLNL-CODE-725085
-#
-# All rights reserved.
-#
-# This file is part of BLT.
-#
-# For additional details, please also read BLT/LICENSE.
-#
-# Redistribution and use in source and binary forms, with or without
-# modification, are permitted provided that the following conditions are met:
-#
-# * Redistributions of source code must retain the above copyright notice,
-#   this list of conditions and the disclaimer below.
-#
-# * Redistributions in binary form must reproduce the above copyright notice,
-#   this list of conditions and the disclaimer (as noted below) in the
-#   documentation and/or other materials provided with the distribution.
-#
-# * Neither the name of the LLNS/LLNL nor the names of its contributors may
-#   be used to endorse or promote products derived from this software without
-#   specific prior written permission.
-#
-# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
-# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
-# ARE DISCLAIMED. IN NO EVENT SHALL LAWRENCE LIVERMORE NATIONAL SECURITY,
-# LLC, THE U.S. DEPARTMENT OF ENERGY OR CONTRIBUTORS BE LIABLE FOR ANY
-# DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
-# DAMAGES  (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
-# OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
-# HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
-# STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING
-# IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-# POSSIBILITY OF SUCH DAMAGE.
-#
-###############################################################################
+# Copyright (c) 2017-2019, Lawrence Livermore National Security, LLC and
+# other BLT Project Developers. See the top-level COPYRIGHT file for details
+# 
+# SPDX-License-Identifier: (BSD-3-Clause)
 
-################################
+#------------------------------------------------------------------------------
 # BLT Internal Testing Project
-################################
+#------------------------------------------------------------------------------
 
-################################
-cmake_minimum_required(VERSION 3.1)
+cmake_minimum_required(VERSION 3.8)
 
 project(blt-example LANGUAGES C CXX)
 
-###############################################################################
+#------------------------------------------------------------------------------
 # Setup BLT
-###############################################################################
+#------------------------------------------------------------------------------
 # Set BLT_SOURCE_DIR to default location, if not set by user 
 if(NOT BLT_SOURCE_DIR)
     set(BLT_SOURCE_DIR "${PROJECT_SOURCE_DIR}/../..")
@@ -59,48 +21,47 @@ endif()
 
 include(${BLT_SOURCE_DIR}/SetupBLT.cmake)
 
-if(WIN32 AND BUILD_SHARED_LIBS)
-    add_definitions("-DWIN32_SHARED_LIBS")
-endif()
-
-
-################################
+#------------------------------------------------------------------------------
 # Project options
-################################
+#------------------------------------------------------------------------------
 option(TEST_GIT_MACROS 
        "Toggle smoke tests for git macros. Off by default since it requires a modified git repo." 
        OFF)
 
 
-################################
+#------------------------------------------------------------------------------
 # Add a library
-################################
+#------------------------------------------------------------------------------
 
-blt_add_library( NAME example
+blt_add_library( NAME    example
                  SOURCES "src/Example.cpp"
                  HEADERS "src/Example.hpp"
                  )
 
+if(WIN32 AND BUILD_SHARED_LIBS)
+    target_compile_definitions(example PUBLIC WIN32_SHARED_LIBS)
+endif()
+
 if(ENABLE_GTEST)
-    ################################
+    #------------------------------------------------------
     # Add an executable
     # (which happens to be a test)
-    ################################
+    #------------------------------------------------------
     blt_add_executable(
              NAME t_example_smoke
              SOURCES "src/t_example_smoke.cpp"
              DEPENDS_ON example gtest)
 
-    ################################
+    #------------------------------------------------------
     # Register our test w/ ctest
-    ################################
+    #------------------------------------------------------
     blt_add_test(NAME t_example_smoke
                  COMMAND t_example_smoke)
 
 
-    ####################
+    #------------------------------------------------------
     #  Header-only test
-    ####################
+    #------------------------------------------------------
 
     blt_add_library(NAME blt_header_only
                     HEADERS "src/HeaderOnly.hpp")
@@ -115,10 +76,10 @@ if(ENABLE_GTEST)
     blt_add_test(NAME t_header_only_smoke
                  COMMAND t_header_only_smoke)
 
-    ####################################################
+    #------------------------------------------------------
     # Tests blt_combine_static_libs macro
     # Note: Does not currently work on Windows or BGQ
-    ####################################################
+    #------------------------------------------------------
     set(_try_combine_static_libs ON)
 
     if(CMAKE_HOST_WIN32)
@@ -133,9 +94,9 @@ if(ENABLE_GTEST)
         add_subdirectory( src/combine_static_library_test )
     endif ()
 
-    ####################
+    #------------------------------------------------------
     # Git Macros test
-    ####################
+    #------------------------------------------------------
     if ( GIT_FOUND AND TEST_GIT_MACROS)
 
       blt_is_git_repo( OUTPUT_STATE is_git_repo
@@ -179,29 +140,29 @@ if(ENABLE_GTEST)
                         ${CMAKE_BINARY_DIR}/t_git_macros_smoke.cpp )
 
         blt_add_executable(
-          NAME t_git_macros_smoke
-          SOURCES "${CMAKE_BINARY_DIR}/t_git_macros_smoke.cpp"
+          NAME       t_git_macros_smoke
+          SOURCES    ${CMAKE_BINARY_DIR}/t_git_macros_smoke.cpp
           DEPENDS_ON gtest
           )
 
-        blt_add_test( NAME t_git_macros_smoke
+        blt_add_test( NAME    t_git_macros_smoke
                       COMMAND t_git_macros_smoke )
 
       endif() # endif is_git_repo
 
     endif() # endif Git_FOUND
 
-    ################
+    #------------------------------------------------------
     # CUDA tests
-    #################
+    #------------------------------------------------------
     if (ENABLE_CUDA)
         add_subdirectory(src/test_cuda_device_call_from_kernel)
     endif()
     
-    ########################################################
+    #------------------------------------------------------
     # Tests blt_add_target_definitions macro
     # Four variants of a test with a list of two definitions
-    ########################################################
+    #------------------------------------------------------
     set(_variant_1 A=1 B)         # neither use '-D'
     set(_variant_2 -DA=1 -DB)     # both uses '-D'
     set(_variant_3 "A=1;-DB")     # list passed in as string
@@ -226,11 +187,104 @@ if(ENABLE_GTEST)
 
 endif() # endif ENABLE_GTEST
 
+if (ENABLE_CUDA AND ENABLE_MPI AND 
+    "${BLT_CXX_STD}" MATCHES c\\+\\+1)
+    blt_add_executable(
+      NAME       test_cuda_mpi
+      SOURCES    src/test_cuda_mpi.cpp
+      DEPENDS_ON cuda mpi hwloc)
+
+    # Tests on a 2^24 elements array.
+    # It can go much bigger, but will not
+    # exceed memory capacity in most computers.
+    blt_add_test(NAME          test_cuda_mpi
+                 COMMAND       test_cuda_mpi 24
+                 NUM_MPI_TASKS 4)
+endif()
+
 message(STATUS "Exercising blt_print_target_properties macro on some targets and non-targets.")
 message(STATUS "")
 foreach(_target gtest example t_example_smoke not-a-target blt_header_only mpi)
     blt_print_target_properties(TARGET ${_target})
 endforeach()
+
+add_subdirectory(src/object_library_test)
+
 if(ENABLE_CLANGQUERY)
   add_subdirectory(src/static_analysis)
+endif()
+
+#------------------------------------------------------------------------------
+# Format the testing code using AStyle
+#------------------------------------------------------------------------------
+if(ASTYLE_FOUND)
+
+  set(smoke_tests_srcs
+    ../smoke/blt_cuda_mpi_smoke.cpp
+    ../smoke/blt_cuda_openmp_smoke.cpp
+    ../smoke/blt_cuda_runtime_smoke.cpp
+    ../smoke/blt_cuda_smoke.cpp
+    ../smoke/blt_fruit_smoke.f90
+    ../smoke/blt_gbenchmark_smoke.cpp
+    ../smoke/blt_gmock_smoke.cpp
+    ../smoke/blt_gtest_smoke.cpp
+    ../smoke/blt_hcc_runtime_smoke.cpp
+    ../smoke/blt_hcc_smoke.cpp
+    ../smoke/blt_hip_runtime_smoke.cpp
+    ../smoke/blt_hip_smoke.cpp
+    ../smoke/blt_mpi_smoke.cpp
+    ../smoke/blt_openmp_smoke.cpp
+    ../smoke/fortran_driver.cpp
+  )
+
+  set(internal_tests_srcs
+    src/Example.cpp
+    src/Example.hpp
+    src/Example_Exports.h
+    src/HeaderOnly.hpp
+
+    src/combine_static_library_test/Foo1.cpp
+    src/combine_static_library_test/Foo1.hpp
+    src/combine_static_library_test/Foo2.cpp
+    src/combine_static_library_test/Foo2.hpp
+    src/combine_static_library_test/Foo3.cpp
+    src/combine_static_library_test/Foo3.hpp
+    src/combine_static_library_test/blt_combine_static_libraries_shared_smoke.cpp
+    src/combine_static_library_test/blt_combine_static_libraries_static_smoke.cpp
+    src/combine_static_library_test/dummy.cpp
+    src/combine_static_library_test/main.cpp
+
+    src/object_library_test/base_object.cpp
+    src/object_library_test/base_object.hpp
+
+    src/object_library_test/inherited_base/inherited_base.cpp
+    src/object_library_test/inherited_base/inherited_base.hpp
+    src/object_library_test/main.cpp
+    src/object_library_test/object.cpp
+    src/object_library_test/object.hpp
+
+    src/static_analysis/well_analyzed_source.cpp
+    src/t_example_compile_definitions.cpp
+    src/t_example_smoke.cpp
+    src/t_header_only_smoke.cpp
+    src/test_cuda_mpi.cpp
+    
+    src/test_cuda_device_call_from_kernel/Child.cpp
+    src/test_cuda_device_call_from_kernel/Child.hpp
+    src/test_cuda_device_call_from_kernel/CudaTests.cpp
+    src/test_cuda_device_call_from_kernel/Parent.cpp
+    src/test_cuda_device_call_from_kernel/Parent.hpp
+  )
+
+  blt_add_code_checks(
+      PREFIX          smoke_tests
+      SOURCES         ${smoke_tests_srcs}
+      ASTYLE_CFG_FILE ${CMAKE_CURRENT_SOURCE_DIR}/astyle.cfg )
+
+  blt_add_code_checks(
+      PREFIX          internal_tests
+      SOURCES         ${internal_tests_srcs}
+      ASTYLE_CFG_FILE ${CMAKE_CURRENT_SOURCE_DIR}/astyle.cfg )
+
+      
 endif()
