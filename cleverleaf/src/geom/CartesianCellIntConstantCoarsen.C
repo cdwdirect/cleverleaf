@@ -93,6 +93,7 @@ void CartesianCellIntConstantCoarsen::coarsen(
       auto fine_array = SAMRAI::pdat::get_const_view<Dim>(*fine_data, d);
       auto coarse_array = SAMRAI::pdat::get_view<Dim>(*coarse_data, d);
 
+  FORCEINLINE_MACRO
       SAMRAI::pdat::parallel_for_all(coarse_box, [=] SAMRAI_HOST_DEVICE (int k, int j) {
         const int j_fine = j*r.x;
         const int k_fine = k*r.y;

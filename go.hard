@@ -11,33 +11,55 @@ fi
 exec 3>&1 4>&2
 function set_output_prefix() {
     exec 1>&3 2>&4
-    exec > >(sed "s/^/$1-$2 [$3]: /")
-    exec 2> >(sed "s/^/$1-$2 [$3] (stderr): /" >&2)
+    exec > >(sed "s/^/$1-$2 [$3] ...........: /")
+    exec 2> >(sed "s/^/$1-$2 [$3] (stderr) ..: /" >&2)
 }
+# Compilation report tails:
+set +m
+touch intel/$2.$1.opt.RAJA.out
+touch intel/$2.$1.opt.Umpire.out
+touch intel/$2.$1.opt.SAMRAI.out
+touch intel/$2.$1.opt.cleverleaf.out
+tail -f intel/$2.$1.opt.RAJA.out > intel/$2.$1.optrpt.RAJA.out &
+let PID_OF_TAIL1=$!
+tail -f intel/$2.$1.opt.Umpire.out > intel/$2.$1.optrpt.Umpire.out &
+let PID_OF_TAIL2=$!
+tail -f intel/$2.$1.opt.SAMRAI.out > intel/$2.$1.optrpt.SAMRAI.out &
+let PID_OF_TAIL3=$!
+tail -f intel/$2.$1.opt.cleverleaf.out > intel/$2.$1.optrpt.cleverleaf.out &
+let PID_OF_TAIL4=$!
+set -m
+#
 set_output_prefix $1 $2 "RAJA"
 ./configure.$1 -m $2 -p package-$1 -c RAJA
 cd package-$1/$2/build/RAJA
-make -j 8 && make install
+make -j 8 install
 cd ../../../../
 #
 set_output_prefix $1 $2 "Umpire"
 ./configure.$1 -m $2 -p package-$1 -c Umpire
 cd package-$1/$2/build/Umpire
-make -j 8 && make install
+make -j 8 install
 cd ../../../../
 #
 set_output_prefix $1 $2 "SAMRAI"
 ./configure.$1 -m $2 -p package-$1 -c SAMRAI
 cd package-$1/$2/build/SAMRAI
-make -j 8 && make install
+make -j 8 install
 cd ../../../../
 #
 set_output_prefix $1 $2 "cleverleaf"
 ./configure.$1 -m $2 -p package-$1 -c cleverleaf
 cd package-$1/$2/build/cleverleaf
-make -j 8 && make install
+make -j 8 install
 cd ../../../../
 #
+set +m
+kill -SIGTERM $PID_OF_TAIL1
+kill -SIGTERM $PID_OF_TAIL2
+kill -SIGTERM $PID_OF_TAIL3
+kill -SIGTERM $PID_OF_TAIL4
+set -m
 exec 1>&3 2>&4
 echo "== CleverLeaf './go.hard $1 $2' script is finished."
 echo "== Binaries should be available in: ./package-$1/$2/install"

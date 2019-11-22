@@ -25,6 +25,7 @@
 #include "SAMRAI/hier/VariableDatabase.h"
 #include "SAMRAI/geom/CartesianPatchGeometry.h"
 
+
 namespace clever {
 namespace hydro {
 
@@ -412,6 +413,7 @@ void Cleverleaf::initializeDataOnPatch(
   // tmp_box.shorten(0, 2);
   // tmp_box.shorten(1, 2);
 
+  FORCEINLINE_MACRO
   SAMRAI::pdat::parallel_for_all(node_ghost_box, [=] SAMRAI_HOST_DEVICE (int k, int j) {
     vertexx(j,k) = physical_xmin+(dx*(j-j_min));
     vertexdx(j,k) = dx;
@@ -422,6 +424,7 @@ void Cleverleaf::initializeDataOnPatch(
   // hier::Box cell_box = patch.getBox();
   // cell_box.grow(d_nghosts);
 
+  FORCEINLINE_MACRO
   SAMRAI::pdat::parallel_for_all(cell_ghost_box, [=] SAMRAI_HOST_DEVICE (int k, int j) {
     cellx(j,k) = 0.5*(vertexx(j,k)+vertexx(j+1,k));
     celldx(j,k) = dx;
@@ -449,11 +452,13 @@ void Cleverleaf::initializeDataOnPatch(
     auto vol_flux_x = SAMRAI::pdat::get_view<Dim, SideData>(getPatchData(patch, d_volflux, context), Side::X);
     auto vol_flux_y = SAMRAI::pdat::get_view<Dim, SideData>(getPatchData(patch, d_volflux, context), Side::Y);
 
+  FORCEINLINE_MACRO
     SAMRAI::pdat::parallel_for_all(node_ghost_box, [=] SAMRAI_HOST_DEVICE (int k, int j) {
       xvel0(j,k) = 0.0;
       yvel0(j,k) = 0.0;
     });
 
+  FORCEINLINE_MACRO
     SAMRAI::pdat::parallel_for_all(cell_ghost_box, [=] SAMRAI_HOST_DEVICE (int k, int j) {
       viscosity(j,k) = 0.0;
       soundspeed(j,k) = 0.0;
@@ -466,6 +471,7 @@ void Cleverleaf::initializeDataOnPatch(
     // side_x_box.grow(d_nghosts);
     // side_x_box.growUpper(0,1);
 
+  FORCEINLINE_MACRO
     SAMRAI::pdat::parallel_for_all(getIndexBox<true>(mass_flux_data, Side::X), [=] SAMRAI_HOST_DEVICE (int k, int j) {
       //RAJA::forallN<PatchPolicy>(isets->getCells(1,true), isets->getNodes(0,true), [=] SAMRAI_HOST_DEVICE (int k, int j) {
       mass_flux_x(j,k) = 0.0;
@@ -476,6 +482,7 @@ void Cleverleaf::initializeDataOnPatch(
     // side_y_box.grow(d_nghosts);
     // side_y_box.growUpper(1,1);
 
+  FORCEINLINE_MACRO
     SAMRAI::pdat::parallel_for_all(getIndexBox<true>(mass_flux_data, Side::Y), [=] SAMRAI_HOST_DEVICE (int k, int j) {
       //RAJA::forallN<PatchPolicy>(isets->getNodes(1,true), isets->getCells(0,true), [=] SAMRAI_HOST_DEVICE (int k, int j) {
       mass_flux_y(j,k) = 0.0;
@@ -560,12 +567,14 @@ void Cleverleaf::initializeDataOnPatch(
       state_radius[state] = current_state->getDoubleWithDefault("radius", -1.0);
     }
 
+  FORCEINLINE_MACRO
     SAMRAI::pdat::parallel_for_all(cell_ghost_box,  [=] SAMRAI_HOST_DEVICE (int k, int j) {
       //RAJA::forallN<PatchPolicy>(isets->getCells(1,true), isets->getCells(0,true), [=] SAMRAI_HOST_DEVICE (int k, int j) {
       energy(j,k) = state_energy[0];
       density(j,k) = state_density[0];
     });
 
+  FORCEINLINE_MACRO
     SAMRAI::pdat::parallel_for_all(node_ghost_box, [=] SAMRAI_HOST_DEVICE (int k, int j) {
       //RAJA::forallN<PatchPolicy>(isets->getNodes(1,true), isets->getNodes(0,true), [=] SAMRAI_HOST_DEVICE (int k, int j) {
       xvel0(j,k) = state_xvel[0];
@@ -577,6 +586,7 @@ void Cleverleaf::initializeDataOnPatch(
 
       switch (state_geometry[state]) {
       case g_rectangle:
+  FORCEINLINE_MACRO
         SAMRAI::pdat::parallel_for_all(cell_ghost_box,  [=] SAMRAI_HOST_DEVICE (int k, int j) {
           if (vertexx(j+1,k) >= state_xmin[state] && vertexx(j,k) < state_xmax[state]) {
             if (vertexy(j,k+1) >= state_ymin[state] && vertexy(j,k) < state_ymax[state]) {
@@ -597,6 +607,7 @@ void Cleverleaf::initializeDataOnPatch(
         const Real x_cent=state_xmin[state];
         const Real y_cent=state_ymin[state];
 
+  FORCEINLINE_MACRO
         SAMRAI::pdat::parallel_for_all(cell_ghost_box,  [=] SAMRAI_HOST_DEVICE (int k, int j) {
           const Real radius = sqrt(
             (cellx(j,k)-x_cent)*(cellx(j,k)-x_cent)
@@ -619,6 +630,7 @@ void Cleverleaf::initializeDataOnPatch(
         const Real x_cent=state_xmin[state];
         const Real y_cent=state_ymin[state];
 
+  FORCEINLINE_MACRO
         SAMRAI::pdat::parallel_for_all(cell_ghost_box,  [=] SAMRAI_HOST_DEVICE (int k, int j) {
           if (vertexx(j,k) == x_cent && vertexy(j,k) == y_cent) {
             energy(j,k)=state_energy[state];
@@ -679,6 +691,7 @@ void Cleverleaf::accelerate(SAMRAI::hier::Patch& patch, double dt)
   // hier::Box node_box = patch.getBox();
   // node_box.growUpper(hier::IntVector::getOne(d_dim));
 
+  FORCEINLINE_MACRO
   SAMRAI::pdat::parallel_for_all(node_box,  [=] SAMRAI_HOST_DEVICE (int k, int j) {
     const Real nodal_mass = (density0(j-1,k-1)*volume(j-1,k-1)
                              + density0(j,k-1)*volume(j,k-1)
@@ -688,6 +701,7 @@ void Cleverleaf::accelerate(SAMRAI::hier::Patch& patch, double dt)
     stepbymass(j,k)=(0.5*dt)/nodal_mass;
   });
 
+  FORCEINLINE_MACRO
   SAMRAI::pdat::parallel_for_all(node_box,  [=] SAMRAI_HOST_DEVICE (int k, int j) {
     xvel1(j,k)=xvel0(j,k)-stepbymass(j,k)*(xarea(j  ,k  )*(pressure(j  ,k  )-pressure(j-1,k  ))
                                            +xarea(j  ,k-1)*(pressure(j  ,k-1)-pressure(j-1,k-1)));
@@ -695,6 +709,7 @@ void Cleverleaf::accelerate(SAMRAI::hier::Patch& patch, double dt)
                                            +yarea(j-1,k  )*(pressure(j-1,k  )-pressure(j-1,k-1)));
   });
 
+  FORCEINLINE_MACRO
   SAMRAI::pdat::parallel_for_all(node_box,  [=] SAMRAI_HOST_DEVICE (int k, int j) {
     xvel1(j,k)=xvel1(j,k)-stepbymass(j,k)*(xarea(j  ,k  )*(viscosity(j  ,k  )-viscosity(j-1,k  ))
                                            +xarea(j  ,k-1)*(viscosity(j  ,k-1)-viscosity(j-1,k-1)));
@@ -719,6 +734,7 @@ void Cleverleaf::ideal_gas_knl(hier::Patch& patch, const bool predict)
   auto pressure = SAMRAI::pdat::get_view<Dim, CellData>(getPatchData(patch, d_pressure, current_context));
   auto soundspeed = SAMRAI::pdat::get_view<Dim, CellData>(getPatchData(patch, d_soundspeed, current_context));
 
+  FORCEINLINE_MACRO
   SAMRAI::pdat::parallel_for_all(patch.getBox(),  [=] SAMRAI_HOST_DEVICE (int k, int j) {
     const Real v=1.0/density(j,k);
     pressure(j,k)=(1.4-1.0)*density(j,k)*energy(j,k);
@@ -744,6 +760,7 @@ void Cleverleaf::viscosity_knl(SAMRAI::hier::Patch& patch)
   auto celldx = SAMRAI::pdat::get_view<Dim, CellData>(delta_data, Coord::X);
   auto celldy = SAMRAI::pdat::get_view<Dim, CellData>(delta_data, Coord::Y);
 
+  FORCEINLINE_MACRO
   SAMRAI::pdat::parallel_for_all(patch.getBox(),  [=] SAMRAI_HOST_DEVICE (int k, int j) {
     const Real ugrad=(xvel0(j+1,k  )+xvel0(j+1,k+1))-(xvel0(j  ,k  )+xvel0(j  ,k+1));
     const Real vgrad=(yvel0(j  ,k+1)+yvel0(j+1,k+1))-(yvel0(j  ,k  )+yvel0(j+1,k  ));
@@ -811,6 +828,7 @@ double Cleverleaf::calc_dt_knl(SAMRAI::hier::Patch& patch)
 
   SAMRAI::tbox::parallel_reduction_variable_t<tbox::Reduction::Min, Real> min_dt(1.0e+20);
 
+  FORCEINLINE_MACRO
   SAMRAI::pdat::parallel_for_all(patch.getBox(),  [=] SAMRAI_HOST_DEVICE (int k, int j) {
     const Real dsx=celldx(j,k);
     const Real dsy=celldy(j,k);
@@ -884,6 +902,7 @@ void Cleverleaf::pdv_knl(SAMRAI::hier::Patch& patch, const double dt, const bool
 
   for (int i = 0; i < d_pdv_weight; i++) {
     if (predict) {
+  FORCEINLINE_MACRO
             SAMRAI::pdat::parallel_for_all(patch.getBox(),  [=] SAMRAI_HOST_DEVICE (int k, int j) {
         const Real left_flux=  (xarea(j  ,k  )*(xvel0(j  ,k  )+xvel0(j  ,k+1)
                                                 +xvel0(j  ,k  )+xvel0(j  ,k+1)))*0.25*dt*0.5;
@@ -908,6 +927,7 @@ void Cleverleaf::pdv_knl(SAMRAI::hier::Patch& patch, const double dt, const bool
         density1(j,k)=density0(j,k)*volume_change(j,k);
       });
     } else {
+  FORCEINLINE_MACRO
             SAMRAI::pdat::parallel_for_all(patch.getBox(),  [=] SAMRAI_HOST_DEVICE (int k, int j) {
         const Real left_flux=  (xarea(j  ,k  )*(xvel0(j  ,k  )+xvel0(j  ,k+1)
                                                 +xvel1(j  ,k  )+xvel1(j  ,k+1)))*0.25*dt;
@@ -959,6 +979,7 @@ void Cleverleaf::flux_calc_knl(SAMRAI::hier::Patch& patch, double dt)
   // SAMRAI::hier::Box side_x_box = patch.getBox();
   // side_x_box.growUpper(0,1);
 
+  FORCEINLINE_MACRO
   SAMRAI::pdat::parallel_for_all(getIndexBox<false>(volflux_data, Side::X),  [=] SAMRAI_HOST_DEVICE (int k, int j) {
     vol_flux_x(j,k) = 0.25*dt*xarea(j,k)
       *(xvel0(j,k)+xvel0(j,k+1)+xvel1(j,k)+xvel1(j,k+1));
@@ -967,6 +988,7 @@ void Cleverleaf::flux_calc_knl(SAMRAI::hier::Patch& patch, double dt)
   // SAMRAI::hier::Box side_y_box = patch.getBox();
   // side_x_box.growUpper(1,1);
 
+  FORCEINLINE_MACRO
   SAMRAI::pdat::parallel_for_all(getIndexBox<false>(volflux_data, Side::Y),  [=] SAMRAI_HOST_DEVICE (int k, int j) {
     vol_flux_y(j,k)=0.25*dt*yarea(j,k)*(yvel0(j,k)+yvel0(j+1,k)+yvel1(j,k)+yvel1(j+1,k));
   });
@@ -1012,11 +1034,13 @@ void Cleverleaf::advec_cell(SAMRAI::hier::Patch& patch, int sweep_number, const 
 
   if (dir == Coord::X) {
     if (sweep_number == 1) {
+  FORCEINLINE_MACRO
       SAMRAI::pdat::parallel_for_all(cell_ghost_box,  [=] SAMRAI_HOST_DEVICE (int k, int j) {
         pre_vol(j,k)=volume(j,k)+(vol_flux_x(j+1,k  )-vol_flux_x(j,k)+vol_flux_y(j  ,k+1)-vol_flux_y(j,k));
         post_vol(j,k)=pre_vol(j,k)-(vol_flux_x(j+1,k  )-vol_flux_x(j,k));
       });
     } else {
+  FORCEINLINE_MACRO
       SAMRAI::pdat::parallel_for_all(cell_ghost_box,  [=] SAMRAI_HOST_DEVICE (int k, int j) {
         pre_vol(j,k)=volume(j,k)+vol_flux_x(j+1,k)-vol_flux_x(j,k);
         post_vol(j,k)=volume(j,k);
@@ -1026,6 +1050,7 @@ void Cleverleaf::advec_cell(SAMRAI::hier::Patch& patch, int sweep_number, const 
     SAMRAI::hier::Box advec_cell_box = patch.getBox();
     advec_cell_box.growUpper(Coord::X, d_nghosts[Coord::X]);
 
+  FORCEINLINE_MACRO
     SAMRAI::pdat::parallel_for_all(advec_cell_box, [=] SAMRAI_HOST_DEVICE (int k, int j) {
       //RAJA::forallN<PatchPolicy>(isets->getCells(1), isets->getAdvecCells(0), [=] SAMRAI_HOST_DEVICE (int k, int j) {
       const int upwind = vol_flux_x(j,k) > 0.0 ? j-2 : MIN(j+1, x_max+2);
@@ -1060,6 +1085,7 @@ void Cleverleaf::advec_cell(SAMRAI::hier::Patch& patch, int sweep_number, const 
       ener_flux(j,k)=mass_flux_x(j,k)*(energy1(donor,k)+limiter);
     });
 
+  FORCEINLINE_MACRO
     SAMRAI::pdat::parallel_for_all(cell_box,  [=] SAMRAI_HOST_DEVICE (int k, int j) {
       pre_mass(j,k)=density1(j,k)*pre_vol(j,k);
       post_mass(j,k)=pre_mass(j,k)+mass_flux_x(j,k)-mass_flux_x(j+1,k);
@@ -1070,12 +1096,14 @@ void Cleverleaf::advec_cell(SAMRAI::hier::Patch& patch, int sweep_number, const 
     });
   } else if (dir == Coord::Y) {
     if (sweep_number == 1) {
+  FORCEINLINE_MACRO
             SAMRAI::pdat::parallel_for_all(cell_ghost_box,  [=] SAMRAI_HOST_DEVICE (int k, int j) {
         //RAJA::forallN<PatchPolicy>(isets->getCells(1,true), isets->getCells(0,true), [=] SAMRAI_HOST_DEVICE (int k, int j) {
         pre_vol(j,k)=volume(j,k)+(vol_flux_y(j  ,k+1)-vol_flux_y(j,k)+vol_flux_x(j+1,k  )-vol_flux_x(j,k));
         post_vol(j,k)=pre_vol(j,k)-(vol_flux_y(j  ,k+1)-vol_flux_y(j,k));
       });
     } else {
+  FORCEINLINE_MACRO
             SAMRAI::pdat::parallel_for_all(cell_ghost_box,  [=] SAMRAI_HOST_DEVICE (int k, int j) {
         //RAJA::forallN<PatchPolicy>(isets->getCells(1,true), isets->getCells(0,true), [=] SAMRAI_HOST_DEVICE (int k, int j) {
         pre_vol(j,k)=volume(j,k)+vol_flux_y(j  ,k+1)-vol_flux_y(j,k);
@@ -1086,6 +1114,7 @@ void Cleverleaf::advec_cell(SAMRAI::hier::Patch& patch, int sweep_number, const 
     SAMRAI::hier::Box advec_cell_box = patch.getBox();
     advec_cell_box.growUpper(Coord::Y, d_nghosts[Coord::Y]);
 
+  FORCEINLINE_MACRO
     SAMRAI::pdat::parallel_for_all(advec_cell_box,  [=] SAMRAI_HOST_DEVICE (int k, int j) {
       //RAJA::forallN<PatchPolicy>(isets->getAdvecCells(1), isets->getCells(0), [=] SAMRAI_HOST_DEVICE (int k, int j) {
       const int upwind = vol_flux_y(j,k) > 0.0 ? k-2 : MIN(k+1, y_max+2);
@@ -1119,6 +1148,7 @@ void Cleverleaf::advec_cell(SAMRAI::hier::Patch& patch, int sweep_number, const 
       ener_flux(j,k)=mass_flux_y(j,k)*(energy1(j,donor)+limiter);
     });
 
+  FORCEINLINE_MACRO
     SAMRAI::pdat::parallel_for_all(cell_box,  [=] SAMRAI_HOST_DEVICE (int k, int j) {
       pre_mass(j,k)=density1(j,k)*pre_vol(j,k);
       post_mass(j,k)=pre_mass(j,k)+mass_flux_y(j,k)-mass_flux_y(j,k+1);
@@ -1182,21 +1212,25 @@ void Cleverleaf::advec_mom(
           auto vel1 = SAMRAI::pdat::get_view<Dim, NodeData>(getPatchData(patch, d_velocity, new_context), Coord::X);
 
     if (mom_sweep == 1) {
+  FORCEINLINE_MACRO
             SAMRAI::pdat::parallel_for_all(cell_ghost_box,  [=] SAMRAI_HOST_DEVICE (int k, int j) {
         post_vol(j,k)= volume(j,k)+vol_flux_y(j  ,k+1)-vol_flux_y(j,k);
         pre_vol(j,k)=post_vol(j,k)+vol_flux_x(j+1,k  )-vol_flux_x(j,k);
       });
     } else if (mom_sweep == 2) {
+  FORCEINLINE_MACRO
             SAMRAI::pdat::parallel_for_all(cell_ghost_box,  [=] SAMRAI_HOST_DEVICE (int k, int j) {
         post_vol(j,k)= volume(j,k)+vol_flux_x(j+1,k  )-vol_flux_x(j,k);
         pre_vol(j,k)=post_vol(j,k)+vol_flux_y(j  ,k+1)-vol_flux_y(j,k);
       });
     } else if (mom_sweep == 3) {
+  FORCEINLINE_MACRO
             SAMRAI::pdat::parallel_for_all(cell_ghost_box,  [=] SAMRAI_HOST_DEVICE (int k, int j) {
         post_vol(j,k)=volume(j,k);
         pre_vol(j,k)=post_vol(j,k)+vol_flux_y(j  ,k+1)-vol_flux_y(j,k);
       });
     } else if (mom_sweep == 4) {
+  FORCEINLINE_MACRO
             SAMRAI::pdat::parallel_for_all(cell_ghost_box,  [=] SAMRAI_HOST_DEVICE (int k, int j) {
         post_vol(j,k)=volume(j,k);
         pre_vol(j,k)=post_vol(j,k)+vol_flux_x(j+1,k  )-vol_flux_x(j,k);
@@ -1208,6 +1242,7 @@ void Cleverleaf::advec_mom(
         SAMRAI::hier::Box cell_node_box = patch.getBox();
         cell_node_box.grow(Coord::X, d_nghosts[Coord::X]);
         cell_node_box.growUpper(Coord::Y, 1);
+  FORCEINLINE_MACRO
         SAMRAI::pdat::parallel_for_all(cell_node_box, [=] SAMRAI_HOST_DEVICE (int k, int j) {
           // RAJA::forallN<PatchPolicy>(isets->getNodes(1), isets->getCells(0,true), [=] SAMRAI_HOST_DEVICE (int k, int j) {
           node_flux(j,k)=0.25*(mass_flux_x(j,k-1  )+mass_flux_x(j  ,k)
@@ -1219,6 +1254,7 @@ void Cleverleaf::advec_mom(
         staggered_cell_node_box.growUpper(Coord::X, d_nghosts[Coord::X]);
         staggered_cell_node_box.growUpper(Coord::Y, 1);
 
+  FORCEINLINE_MACRO
         SAMRAI::pdat::parallel_for_all(staggered_cell_node_box, [=] SAMRAI_HOST_DEVICE (int k, int j) {
           // RAJA::forallN<PatchPolicy>(isets->getNodes(1), isets->getStaggeredCells(0), [=] SAMRAI_HOST_DEVICE (int k, int j) {
           node_mass_post(j,k)=0.25*(density1(j  ,k-1)*post_vol(j  ,k-1)
@@ -1227,6 +1263,7 @@ void Cleverleaf::advec_mom(
                                     +density1(j-1,k  )*post_vol(j-1,k  ));
         });
 
+  FORCEINLINE_MACRO
         SAMRAI::pdat::parallel_for_all(staggered_cell_node_box, [=] SAMRAI_HOST_DEVICE (int k, int j) {
           // RAJA::forallN<PatchPolicy>(isets->getNodes(1), isets->getStaggeredCells(0), [=] SAMRAI_HOST_DEVICE (int k, int j) {
           node_mass_pre(j,k)=node_mass_post(j,k)-node_flux(j-1,k)+node_flux(j,k);
@@ -1236,6 +1273,7 @@ void Cleverleaf::advec_mom(
       SAMRAI::hier::Box oneghost_node_box = patch.getBox();
       oneghost_node_box.grow(Coord::X, 1);
       oneghost_node_box.growUpper(Coord::Y, 1);
+  FORCEINLINE_MACRO
       SAMRAI::pdat::parallel_for_all(oneghost_node_box, [=] SAMRAI_HOST_DEVICE (int k, int j) {
         // RAJA::forallN<PatchPolicy>(isets->getNodes(1), isets->getOneGhostCells(0), [=] SAMRAI_HOST_DEVICE (int k, int j) {
         const int upwind = (node_flux(j,k) < 0.0) ? j+2 : j-1;
@@ -1260,6 +1298,7 @@ void Cleverleaf::advec_mom(
         mom_flux(j,k)=advec_vel(j,k)*node_flux(j,k);
       });
 
+  FORCEINLINE_MACRO
       SAMRAI::pdat::parallel_for_all(node_box, [=] SAMRAI_HOST_DEVICE (int k, int j) {
         // RAJA::forallN<PatchPolicy>(isets->getNodes(1), isets->getNodes(0), [=] SAMRAI_HOST_DEVICE (int k, int j) {
         vel1 (j,k)=(vel1 (j,k)*node_mass_pre(j,k)+mom_flux(j-1,k)-mom_flux(j,k))/node_mass_post(j,k);
@@ -1270,6 +1309,7 @@ void Cleverleaf::advec_mom(
         SAMRAI::hier::Box node_cell_ghost_box = patch.getBox();
         node_cell_ghost_box.growUpper(Coord::X, 1);
         node_cell_ghost_box.grow(Coord::Y, d_nghosts[Coord::Y]);
+  FORCEINLINE_MACRO
         SAMRAI::pdat::parallel_for_all(node_cell_ghost_box, [=] SAMRAI_HOST_DEVICE (int k, int j) {
           // RAJA::forallN<PatchPolicy>(isets->getCells(1,true), isets->getNodes(0), [=] SAMRAI_HOST_DEVICE (int k, int j) {
           node_flux(j,k)=0.25*(mass_flux_y(j-1,k  )+mass_flux_y(j  ,k  )
@@ -1281,6 +1321,7 @@ void Cleverleaf::advec_mom(
         node_staggered_cell_box.growLower(Coord::Y, 1);
         node_staggered_cell_box.growUpper(Coord::Y, d_nghosts[Coord::Y]);
 
+  FORCEINLINE_MACRO
         SAMRAI::pdat::parallel_for_all(node_staggered_cell_box, [=] SAMRAI_HOST_DEVICE (int k, int j) {
           // RAJA::forallN<PatchPolicy>(isets->getStaggeredCells(1), isets->getNodes(0), [=] SAMRAI_HOST_DEVICE (int k, int j) {
           node_mass_post(j,k)=0.25*(density1(j  ,k-1)*post_vol(j  ,k-1)
@@ -1289,6 +1330,7 @@ void Cleverleaf::advec_mom(
                                     +density1(j-1,k  )*post_vol(j-1,k  ));
         });
 
+  FORCEINLINE_MACRO
         SAMRAI::pdat::parallel_for_all(node_staggered_cell_box, [=] SAMRAI_HOST_DEVICE (int k, int j) {
           // RAJA::forallN<PatchPolicy>(isets->getStaggeredCells(1), isets->getNodes(0), [=] SAMRAI_HOST_DEVICE (int k, int j) {
           node_mass_pre(j,k)=node_mass_post(j,k)-node_flux(j,k-1)+node_flux(j,k);
@@ -1298,6 +1340,7 @@ void Cleverleaf::advec_mom(
       SAMRAI::hier::Box node_oneghost_box = patch.getBox();
       node_oneghost_box.growUpper(Coord::X, 1);
       node_oneghost_box.grow(Coord::Y, 1);
+  FORCEINLINE_MACRO
       SAMRAI::pdat::parallel_for_all(node_oneghost_box, [=] SAMRAI_HOST_DEVICE (int k, int j) {
         // RAJA::forallN<PatchPolicy>(isets->getOneGhostCells(1), isets->getNodes(0), [=] SAMRAI_HOST_DEVICE (int k, int j) {
         const int upwind = (node_flux(j,k) < 0.0) ?  k+2 : k-1;
@@ -1323,6 +1366,7 @@ void Cleverleaf::advec_mom(
         mom_flux(j,k)=advec_vel(j,k)*node_flux(j,k);
       });
 
+  FORCEINLINE_MACRO
       SAMRAI::pdat::parallel_for_all(node_box, [=] SAMRAI_HOST_DEVICE (int k, int j) {
         // RAJA::forallN<PatchPolicy>(isets->getNodes(1), isets->getNodes(0), [=] SAMRAI_HOST_DEVICE (int k, int j) {
         vel1 (j,k)=(vel1(j,k)*node_mass_pre(j,k)+mom_flux(j,k-1)-mom_flux(j,k))/node_mass_post(j,k);
@@ -1332,24 +1376,28 @@ void Cleverleaf::advec_mom(
           auto vel1 = SAMRAI::pdat::get_view<Dim, NodeData>(getPatchData(patch, d_velocity, new_context), Coord::Y);
 
     if (mom_sweep == 1) {
+  FORCEINLINE_MACRO
             SAMRAI::pdat::parallel_for_all(cell_ghost_box, [=] SAMRAI_HOST_DEVICE (int k, int j) {
         // RAJA::forallN<PatchPolicy>(isets->getCells(1,true), isets->getCells(0,true), [=] SAMRAI_HOST_DEVICE (int k, int j) {
         post_vol(j,k)= volume(j,k)+vol_flux_y(j  ,k+1)-vol_flux_y(j,k);
         pre_vol(j,k)=post_vol(j,k)+vol_flux_x(j+1,k  )-vol_flux_x(j,k);
       });
     } else if (mom_sweep == 2) {
+  FORCEINLINE_MACRO
             SAMRAI::pdat::parallel_for_all(cell_ghost_box, [=] SAMRAI_HOST_DEVICE (int k, int j) {
         // RAJA::forallN<PatchPolicy>(isets->getCells(1,true), isets->getCells(0,true), [=] SAMRAI_HOST_DEVICE (int k, int j) {
         post_vol(j,k)= volume(j,k)+vol_flux_x(j+1,k  )-vol_flux_x(j,k);
         pre_vol(j,k)=post_vol(j,k)+vol_flux_y(j  ,k+1)-vol_flux_y(j,k);
       });
     } else if (mom_sweep == 3) {
+  FORCEINLINE_MACRO
             SAMRAI::pdat::parallel_for_all(cell_ghost_box, [=] SAMRAI_HOST_DEVICE (int k, int j) {
         // RAJA::forallN<PatchPolicy>(isets->getCells(1,true), isets->getCells(0,true), [=] SAMRAI_HOST_DEVICE (int k, int j) {
         post_vol(j,k)=volume(j,k);
         pre_vol(j,k)=post_vol(j,k)+vol_flux_y(j  ,k+1)-vol_flux_y(j,k);
       });
     } else if (mom_sweep == 4) {
+  FORCEINLINE_MACRO
             SAMRAI::pdat::parallel_for_all(cell_ghost_box, [=] SAMRAI_HOST_DEVICE (int k, int j) {
         // RAJA::forallN<PatchPolicy>(isets->getCells(1,true), isets->getCells(0,true), [=] SAMRAI_HOST_DEVICE (int k, int j) {
         post_vol(j,k)=volume(j,k);
@@ -1362,6 +1410,7 @@ void Cleverleaf::advec_mom(
         SAMRAI::hier::Box cell_ghost_node_box = patch.getBox();
         cell_ghost_node_box.grow(Coord::X, d_nghosts[Coord::X]);
         cell_ghost_node_box.growUpper(Coord::Y, 1);
+  FORCEINLINE_MACRO
         SAMRAI::pdat::parallel_for_all(cell_ghost_node_box, [=] SAMRAI_HOST_DEVICE (int k, int j) {
           // RAJA::forallN<PatchPolicy>(isets->getNodes(1), isets->getCells(0,true), [=] SAMRAI_HOST_DEVICE (int k, int j) {
           node_flux(j,k)=0.25*(mass_flux_x(j,k-1  )+mass_flux_x(j  ,k)
@@ -1373,6 +1422,7 @@ void Cleverleaf::advec_mom(
         staggered_cell_node_box.growUpper(Coord::X, d_nghosts[Coord::X]);
         staggered_cell_node_box.growUpper(Coord::Y, 1);
 
+  FORCEINLINE_MACRO
         SAMRAI::pdat::parallel_for_all(staggered_cell_node_box, [=] SAMRAI_HOST_DEVICE (int k, int j) {
           // RAJA::forallN<PatchPolicy>(isets->getNodes(1), isets->getStaggeredCells(0), [=] SAMRAI_HOST_DEVICE (int k, int j) {
           node_mass_post(j,k)=0.25*(density1(j  ,k-1)*post_vol(j  ,k-1)
@@ -1381,6 +1431,7 @@ void Cleverleaf::advec_mom(
                                     +density1(j-1,k  )*post_vol(j-1,k  ));
         });
 
+  FORCEINLINE_MACRO
         SAMRAI::pdat::parallel_for_all(staggered_cell_node_box, [=] SAMRAI_HOST_DEVICE (int k, int j) {
           // RAJA::forallN<PatchPolicy>(isets->getNodes(1), isets->getStaggeredCells(0), [=] SAMRAI_HOST_DEVICE (int k, int j) {
           node_mass_pre(j,k)=node_mass_post(j,k)-node_flux(j-1,k)+node_flux(j,k);
@@ -1391,6 +1442,7 @@ void Cleverleaf::advec_mom(
       oneghost_node_box.grow(Coord::X, 1);
       oneghost_node_box.growUpper(Coord::Y, 1);
 
+  FORCEINLINE_MACRO
       SAMRAI::pdat::parallel_for_all(oneghost_node_box, [=] SAMRAI_HOST_DEVICE (int k, int j) {
         // RAJA::forallN<PatchPolicy>(isets->getNodes(1), isets->getOneGhostCells(0), [=] SAMRAI_HOST_DEVICE (int k, int j) {
         const int upwind = (node_flux(j,k) < 0.0) ? j+2 : j-1;
@@ -1415,6 +1467,7 @@ void Cleverleaf::advec_mom(
         mom_flux(j,k)=advec_vel(j,k)*node_flux(j,k);
       });
 
+  FORCEINLINE_MACRO
       SAMRAI::pdat::parallel_for_all(node_box, [=] SAMRAI_HOST_DEVICE (int k, int j) {
         // RAJA::forallN<PatchPolicy>(isets->getNodes(1), isets->getNodes(0), [=] SAMRAI_HOST_DEVICE (int k, int j) {
         vel1 (j,k)=(vel1 (j,k)*node_mass_pre(j,k)+mom_flux(j-1,k)-mom_flux(j,k))/node_mass_post(j,k);
@@ -1425,6 +1478,7 @@ void Cleverleaf::advec_mom(
         SAMRAI::hier::Box node_cell_ghost_box = patch.getBox();
         node_cell_ghost_box.growUpper(Coord::X, 1);
         node_cell_ghost_box.grow(Coord::Y, d_nghosts[Coord::Y]);
+  FORCEINLINE_MACRO
         SAMRAI::pdat::parallel_for_all(node_cell_ghost_box, [=] SAMRAI_HOST_DEVICE (int k, int j) {
           // RAJA::forallN<PatchPolicy>(isets->getCells(1,true), isets->getNodes(0), [=] SAMRAI_HOST_DEVICE (int k, int j) {
           node_flux(j,k)=0.25*(mass_flux_y(j-1,k  )+mass_flux_y(j  ,k  )
@@ -1436,6 +1490,7 @@ void Cleverleaf::advec_mom(
         node_staggered_cell_box.growLower(Coord::Y, 1);
         node_staggered_cell_box.growUpper(Coord::Y, d_nghosts[Coord::Y]);
 
+  FORCEINLINE_MACRO
         SAMRAI::pdat::parallel_for_all(node_staggered_cell_box, [=] SAMRAI_HOST_DEVICE (int k, int j) {
           // RAJA::forallN<PatchPolicy>(isets->getStaggeredCells(1), isets->getNodes(0), [=] SAMRAI_HOST_DEVICE (int k, int j) {
           node_mass_post(j,k)=0.25*(density1(j  ,k-1)*post_vol(j  ,k-1)
@@ -1444,6 +1499,7 @@ void Cleverleaf::advec_mom(
                                     +density1(j-1,k  )*post_vol(j-1,k  ));
         });
 
+  FORCEINLINE_MACRO
         SAMRAI::pdat::parallel_for_all(node_staggered_cell_box, [=] SAMRAI_HOST_DEVICE (int k, int j) {
           // RAJA::forallN<PatchPolicy>(isets->getStaggeredCells(1), isets->getNodes(0), [=] SAMRAI_HOST_DEVICE (int k, int j) {
           node_mass_pre(j,k)=node_mass_post(j,k)-node_flux(j,k-1)+node_flux(j,k);
@@ -1454,6 +1510,7 @@ void Cleverleaf::advec_mom(
       node_oneghost_box.growUpper(Coord::X, 1);
       node_oneghost_box.grow(Coord::Y, 1);
 
+  FORCEINLINE_MACRO
       SAMRAI::pdat::parallel_for_all(node_oneghost_box, [=] SAMRAI_HOST_DEVICE (int k, int j) {
         // RAJA::forallN<PatchPolicy>(isets->getOneGhostCells(1), isets->getNodes(0), [=] SAMRAI_HOST_DEVICE (int k, int j) {
         const int upwind = (node_flux(j,k) < 0.0) ?  k+2 : k-1;
@@ -1479,6 +1536,7 @@ void Cleverleaf::advec_mom(
         mom_flux(j,k)=advec_vel(j,k)*node_flux(j,k);
       });
 
+  FORCEINLINE_MACRO
       SAMRAI::pdat::parallel_for_all(node_box, [=] SAMRAI_HOST_DEVICE (int k, int j) {
         // RAJA::forallN<PatchPolicy>(isets->getNodes(1), isets->getNodes(0), [=] SAMRAI_HOST_DEVICE (int k, int j) {
         vel1 (j,k)=(vel1(j,k)*node_mass_pre(j,k)+mom_flux(j,k-1)-mom_flux(j,k))/node_mass_post(j,k);
@@ -1606,6 +1664,7 @@ void Cleverleaf::field_summary(
   SAMRAI::tbox::parallel_reduction_variable_t<tbox::Reduction::Sum, Real> press(0.0);
   SAMRAI::tbox::parallel_reduction_variable_t<tbox::Reduction::Sum, int> cells(0);
 
+  FORCEINLINE_MACRO
   SAMRAI::pdat::parallel_for_all(patch.getBox(), [=] SAMRAI_HOST_DEVICE (int k, int j) {
     // RAJA::forallN<PatchPolicy>(isets->getCells(1), isets->getCells(0), [=] SAMRAI_HOST_DEVICE (int k, int j) {
     if (level_indicator(j,k) == level_number) {
@@ -1652,6 +1711,7 @@ void Cleverleaf::tagGradientDetectorCells(
   auto pressure = SAMRAI::pdat::get_view<Dim, CellData>(getPatchData(patch, d_pressure, context));
   auto viscosity = SAMRAI::pdat::get_view<Dim, CellData>(getPatchData(patch, d_viscosity, context));
 
+  FORCEINLINE_MACRO
   SAMRAI::pdat::parallel_for_all(patch.getBox(), [=] SAMRAI_HOST_DEVICE (int k, int j) {
     // RAJA::forallN<PatchPolicy>(isets->getCells(1), isets->getCells(0), [=] SAMRAI_HOST_DEVICE (int k, int j) {
     tags(j,k) = 0;
@@ -1664,6 +1724,7 @@ void Cleverleaf::tagGradientDetectorCells(
   const Real tag_pressure = d_tag_pressure_gradient;
 
   if (d_tag_q) {
+  FORCEINLINE_MACRO
           SAMRAI::pdat::parallel_for_all(patch.getBox(), [=] SAMRAI_HOST_DEVICE (int k, int j) {
       // RAJA::forallN<PatchPolicy>(isets->getCells(1), isets->getCells(0), [=] SAMRAI_HOST_DEVICE (int k, int j) {
       if (viscosity(j,k) > tag_q) {
@@ -1673,6 +1734,7 @@ void Cleverleaf::tagGradientDetectorCells(
   }
 
   if (d_tag_density) {
+  FORCEINLINE_MACRO
           SAMRAI::pdat::parallel_for_all(patch.getBox(), [=] SAMRAI_HOST_DEVICE (int k, int j) {
       // RAJA::forallN<PatchPolicy>(isets->getCells(1), isets->getCells(0), [=] SAMRAI_HOST_DEVICE (int k, int j) {
       const Real d2x = fabs(density(j+1,k) - 2.0*density(j,k) + density(j-1,k));
@@ -1688,6 +1750,7 @@ void Cleverleaf::tagGradientDetectorCells(
   }
 
   if (d_tag_energy) {
+  FORCEINLINE_MACRO
           SAMRAI::pdat::parallel_for_all(patch.getBox(), [=] SAMRAI_HOST_DEVICE (int k, int j) {
       // RAJA::forallN<PatchPolicy>(isets->getCells(1), isets->getCells(0), [=] SAMRAI_HOST_DEVICE (int k, int j) {
       const Real d2x = fabs(energy(j+1,k) - 2.0*energy(j,k) + energy(j-1,k));
@@ -1703,6 +1766,7 @@ void Cleverleaf::tagGradientDetectorCells(
   }
 
   if (d_tag_pressure) {
+  FORCEINLINE_MACRO
           SAMRAI::pdat::parallel_for_all(patch.getBox(), [=] SAMRAI_HOST_DEVICE (int k, int j) {
       // RAJA::forallN<PatchPolicy>(isets->getCells(1), isets->getCells(0), [=] SAMRAI_HOST_DEVICE (int k, int j) {
       const Real d2x = fabs(pressure(j+1,k) - 2.0*pressure(j,k) + pressure(j-1,k));
@@ -1718,6 +1782,7 @@ void Cleverleaf::tagGradientDetectorCells(
   }
 
   if(d_tag_all) {
+  FORCEINLINE_MACRO
           SAMRAI::pdat::parallel_for_all(patch.getBox(), [=] SAMRAI_HOST_DEVICE (int k, int j) {
       // RAJA::forallN<PatchPolicy>(isets->getCells(1), isets->getCells(0), [=] SAMRAI_HOST_DEVICE (int k, int j) {
       tags(j,k) = 1;
@@ -1726,6 +1791,7 @@ void Cleverleaf::tagGradientDetectorCells(
 
   auto samrai_tags = SAMRAI::pdat::get_view<Dim, IndicatorData>(samrai_tags_data);
 
+  FORCEINLINE_MACRO
   SAMRAI::pdat::parallel_for_all(patch.getBox(), [=] SAMRAI_HOST_DEVICE (int k, int j) {
     // RAJA::forallN<PatchPolicy>(
     //     isets->getCells(1,false),
@@ -1742,6 +1808,7 @@ void Cleverleaf::fillLevelIndicator(
 {
   auto context = getCurrentDataContext();
   auto indicator = SAMRAI::pdat::get_view<Dim, IndicatorData>(getPatchData(patch, d_level_indicator, context));
+  FORCEINLINE_MACRO
   SAMRAI::pdat::parallel_for_all(patch.getBox(), [=] SAMRAI_HOST_DEVICE (int k, int j) {
     // RAJA::forallN<PatchPolicy>(isets->getCells(1), isets->getCells(0), [=] SAMRAI_HOST_DEVICE (int k, int j) {
     indicator(j,k) = level_number;
@@ -1780,6 +1847,7 @@ void Cleverleaf::setBCs(
   {
     const int y_min = box.lower(Coord::Y);
     // const int y_min = isets->getMin(1);
+  FORCEINLINE_MACRO
     SAMRAI::pdat::parallel_for_all(bbox, Coord::X, [=] SAMRAI_HOST_DEVICE (int j) {
       // RAJA::forall<BoundaryPolicy>(isets->getBoundaryCells(0, depth-1), [=] SAMRAI_HOST_DEVICE (int j) {
       field(j,y_min-1) = field(j,y_min);
@@ -1793,6 +1861,7 @@ void Cleverleaf::setBCs(
   {
     const int y_max = box.upper(Coord::Y);
     // const int y_max = isets->getMax(1);
+  FORCEINLINE_MACRO
     SAMRAI::pdat::parallel_for_all(bbox, Coord::X, [=] SAMRAI_HOST_DEVICE (int j) {
       // RAJA::forall<BoundaryPolicy>(isets->getBoundaryCells(0, depth-1), [=] SAMRAI_HOST_DEVICE (int j) {
       field(j,y_max+1) = field(j,y_max);
@@ -1806,6 +1875,7 @@ void Cleverleaf::setBCs(
   {
     const int x_min = box.lower(Coord::X);
     // const int x_min = isets->getMin(0);
+  FORCEINLINE_MACRO
     SAMRAI::pdat::parallel_for_all(bbox, Coord::Y, [=] SAMRAI_HOST_DEVICE (int k) {
       // RAJA::forall<BoundaryPolicy>(isets->getBoundaryCells(1, depth-1), [=] SAMRAI_HOST_DEVICE (int k) {
       field(x_min-1,k) = field(x_min,k);
@@ -1819,6 +1889,7 @@ void Cleverleaf::setBCs(
   {
     const int x_max = box.upper(Coord::X);
     // const int x_max = isets->getMax(0);
+  FORCEINLINE_MACRO
     SAMRAI::pdat::parallel_for_all(bbox, Coord::Y, [=] SAMRAI_HOST_DEVICE (int k) {
       // RAJA::forall<BoundaryPolicy>(isets->getBoundaryCells(1, depth-1), [=] SAMRAI_HOST_DEVICE (int k) {
       field(x_max+1,k) = field(x_max,k);
@@ -1847,6 +1918,7 @@ void Cleverleaf::setBCs(
   case BdryLoc::YLO:
   {
     const int y_min = box.lower(Coord::Y);
+  FORCEINLINE_MACRO
     SAMRAI::pdat::parallel_for_all(bbox, Coord::X, [=] SAMRAI_HOST_DEVICE (int j) {
       // RAJA::forall<BoundaryPolicy>(isets->getBoundaryNodes(0, depth-1), [=] SAMRAI_HOST_DEVICE (int j) {
       field0(j,y_min-1) =  1.0*field0(j,y_min+1);
@@ -1861,6 +1933,7 @@ void Cleverleaf::setBCs(
   case BdryLoc::YHI:
   {
     const int y_max = box.upper(Coord::Y);
+  FORCEINLINE_MACRO
     SAMRAI::pdat::parallel_for_all(bbox, Coord::X, [=] SAMRAI_HOST_DEVICE (int j) {
       // RAJA::forall<BoundaryPolicy>(isets->getBoundaryNodes(0, depth-1), [=] SAMRAI_HOST_DEVICE (int j) {
       field0(j,y_max+2) =  1.0*field0(j,y_max);
@@ -1875,6 +1948,7 @@ void Cleverleaf::setBCs(
   case BdryLoc::XLO:
   {
     const int x_min = box.lower(Coord::X);
+  FORCEINLINE_MACRO
     SAMRAI::pdat::parallel_for_all(bbox, Coord::Y, [=] SAMRAI_HOST_DEVICE (int k) {
       // RAJA::forall<BoundaryPolicy>(isets->getBoundaryNodes(1, depth-1), [=] SAMRAI_HOST_DEVICE (int k) {
       field0(x_min-1,k) = -1.0*field0(x_min+1,k);
@@ -1889,6 +1963,7 @@ void Cleverleaf::setBCs(
   case BdryLoc::XHI:
   {
     const int x_max = box.upper(Coord::X);
+  FORCEINLINE_MACRO
     SAMRAI::pdat::parallel_for_all(bbox, Coord::Y, [=] SAMRAI_HOST_DEVICE (int k) {
       // RAJA::forall<BoundaryPolicy>(isets->getBoundaryNodes(1, depth-1), [=] SAMRAI_HOST_DEVICE (int k) {
       field0(x_max+2,k) = -1.0*field0(x_max,k);
@@ -1919,6 +1994,7 @@ void Cleverleaf::setBCs(
   case BdryLoc::YLO:
   {
     const int y_min = box.lower(Coord::Y);
+  FORCEINLINE_MACRO
     SAMRAI::pdat::parallel_for_all(bbox0, Coord::X, [=] SAMRAI_HOST_DEVICE (int j) {
       // RAJA::forall<BoundaryPolicy>(isets->getBoundaryNodes(0, depth-1), [=] SAMRAI_HOST_DEVICE (int j) {
       field0(j,y_min-1) = field0(j,y_min);
@@ -1926,6 +2002,7 @@ void Cleverleaf::setBCs(
         field0(j,y_min-2) = field0(j,y_min+1);
       }
     });
+  FORCEINLINE_MACRO
     SAMRAI::pdat::parallel_for_all(bbox1, Coord::X, [=] SAMRAI_HOST_DEVICE (int j) {
       // RAJA::forall<BoundaryPolicy>(isets->getBoundaryCells(0, depth-1), [=] SAMRAI_HOST_DEVICE (int j) {
       field1(j,y_min-1) = -1.0*field1(j,y_min+1);
@@ -1938,6 +2015,7 @@ void Cleverleaf::setBCs(
   case BdryLoc::YHI:
   {
     const int y_max = box.upper(Coord::Y);
+  FORCEINLINE_MACRO
     SAMRAI::pdat::parallel_for_all(bbox0, Coord::X, [=] SAMRAI_HOST_DEVICE (int j) {
       // RAJA::forall<BoundaryPolicy>(isets->getBoundaryNodes(0, depth-1), [=] SAMRAI_HOST_DEVICE (int j) {
       field0(j,y_max+1) = field0(j,y_max);
@@ -1945,6 +2023,7 @@ void Cleverleaf::setBCs(
         field0(j,y_max+2) = field0(j,y_max-1);
       }
     });
+  FORCEINLINE_MACRO
     SAMRAI::pdat::parallel_for_all(bbox1, Coord::X, [=] SAMRAI_HOST_DEVICE (int j) {
       // RAJA::forall<BoundaryPolicy>(isets->getBoundaryCells(0, depth-1), [=] SAMRAI_HOST_DEVICE (int j) {
       field1(j,y_max+2) = -1.0*field1(j,y_max);
@@ -1957,6 +2036,7 @@ void Cleverleaf::setBCs(
   case BdryLoc::XLO:
   {
     const int x_min = box.lower(Coord::X);
+  FORCEINLINE_MACRO
     SAMRAI::pdat::parallel_for_all(bbox0, Coord::Y, [=] SAMRAI_HOST_DEVICE (int k) {
       // RAJA::forall<BoundaryPolicy>(isets->getBoundaryCells(1, depth-1), [=] SAMRAI_HOST_DEVICE (int k) {
       field0(x_min-1,k) = -1.0*field0(x_min+1,k);
@@ -1964,6 +2044,7 @@ void Cleverleaf::setBCs(
         field0(x_min-2,k) = -1.0*field0(x_min+2,k);
       }
     });
+  FORCEINLINE_MACRO
     SAMRAI::pdat::parallel_for_all(bbox1, Coord::Y, [=] SAMRAI_HOST_DEVICE (int k) {
       // RAJA::forall<BoundaryPolicy>(isets->getBoundaryNodes(1, depth-1), [=] SAMRAI_HOST_DEVICE (int k) {
       field1(x_min-1,k) = field1(x_min,k);
@@ -1976,6 +2057,7 @@ void Cleverleaf::setBCs(
   case BdryLoc::XHI:
   {
     const int x_max = box.upper(Coord::X);
+  FORCEINLINE_MACRO
     SAMRAI::pdat::parallel_for_all(bbox0, Coord::Y, [=] SAMRAI_HOST_DEVICE (int k) {
       // RAJA::forall<BoundaryPolicy>(isets->getBoundaryCells(1, depth-1), [=] SAMRAI_HOST_DEVICE (int k) {
       field0(x_max+2,k) = -1.0*field0(x_max,k);
@@ -1983,6 +2065,7 @@ void Cleverleaf::setBCs(
         field0(x_max+3,k) = -1.0*field0(x_max-1,k);
       }
     });
+  FORCEINLINE_MACRO
     SAMRAI::pdat::parallel_for_all(bbox1, Coord::Y, [=] SAMRAI_HOST_DEVICE (int k) {
       // RAJA::forall<BoundaryPolicy>(isets->getBoundaryNodes(1, depth-1), [=] SAMRAI_HOST_DEVICE (int k) {
       field1(x_max+1,k) = field1(x_max,k);

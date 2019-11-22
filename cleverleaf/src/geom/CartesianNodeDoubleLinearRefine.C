@@ -112,6 +112,7 @@ void CartesianNodeDoubleLinearRefine::refine(
       const Real realrat1 = 1.0/static_cast<Real>(ratio(1));
 
       // TODO I'm not sure if this should be cells or nodes...
+  FORCEINLINE_MACRO
       SAMRAI::pdat::parallel_for_all(fine_box, [=] SAMRAI_HOST_DEVICE (int k, int j) {
         const int ic0 = floor(static_cast<Real>(j)/r.x);
         const int ic1 = floor(static_cast<Real>(k)/r.y);

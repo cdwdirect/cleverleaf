@@ -109,19 +109,27 @@ mkdir -p $build_dir
 mkdir -p $install_dir
 
 export INTEL_OPT_FLAGS="  "
-export INTEL_OPT_FLAGS="${INTEL_OPT_FLAGS} -qoverride-limits "
-export INTEL_OPT_FLAGS="${INTEL_OPT_FLAGS} -no-inline-factor "
-export INTEL_OPT_FLAGS="${INTEL_OPT_FLAGS} -no-inline-max-per-compile "
-export INTEL_OPT_FLAGS="${INTEL_OPT_FLAGS} -no-inline-max-per-routine "
-export INTEL_OPT_FLAGS="${INTEL_OPT_FLAGS} -no-inline-max-size "
-export INTEL_OPT_FLAGS="${INTEL_OPT_FLAGS} -no-inline-max-total-size "
-export INTEL_OPT_FLAGS="${INTEL_OPT_FLAGS} -no-inline-min-size "
+#export INTEL_OPT_FLAGS="${INTEL_OPT_FLAGS} -qoverride-limits "
+#export INTEL_OPT_FLAGS="${INTEL_OPT_FLAGS} -no-inline-factor "
+#export INTEL_OPT_FLAGS="${INTEL_OPT_FLAGS} -no-inline-max-per-compile "
+#export INTEL_OPT_FLAGS="${INTEL_OPT_FLAGS} -no-inline-max-per-routine "
+#export INTEL_OPT_FLAGS="${INTEL_OPT_FLAGS} -no-inline-max-size "
+#export INTEL_OPT_FLAGS="${INTEL_OPT_FLAGS} -no-inline-max-total-size "
+#export INTEL_OPT_FLAGS="${INTEL_OPT_FLAGS} -no-inline-min-size "
 export INTEL_OPT_FLAGS="${INTEL_OPT_FLAGS} -qopt-report=5 "
+export INTEL_OPT_FLAGS="${INTEL_OPT_FLAGS} -qopt-report-phase all "
+#export INTEL_OPT_FLAGS="${INTEL_OPT_FLAGS} -qopt-report-per-object "
 export INTEL_OPT_FLAGS="${INTEL_OPT_FLAGS} -qopt-report-file=$prefix/intel/$mode.normal.opt.$pkg.out "
 
-export CXX_FLAGS=" ${INTEL_OPT_FLAGS} ${CXX_FLAGS} "
 export CXXFLAGS="  ${INTEL_OPT_FLAGS} ${CXXFLAGS}  "
 
+#####
+
+#export GCC_OPT_FLAGS="  "
+#export GCC_OPT_FLAGS="${GCC_OPT_FLAGS} -O3 "
+#export CXXFLAGS="  ${GCC_OPT_FLAGS}   ${CXXFLAGS}"
+
+#####
 
 if [ "$pkg" = RAJA ]; then
     cd $build_dir

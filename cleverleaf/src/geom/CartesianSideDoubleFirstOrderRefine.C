@@ -90,6 +90,7 @@ void CartesianSideDoubleFirstOrderRefine::refine(
           auto fine_array = SAMRAI::pdat::get_view<Dim>(*fine_data, axis, depth);
           auto coarse_array = SAMRAI::pdat::get_const_view<Dim>(*coarse_data, axis, depth);
 
+  FORCEINLINE_MACRO
           SAMRAI::pdat::parallel_for_all(fine_side_box, [=] SAMRAI_HOST_DEVICE (int k, int j) {
             const int ic1 = (k < 0) ? (k+1)/r.y-1 : k/r.y;
             const int ic0 = (j < 0) ? (j+1)/r.x-1 : j/r.x;

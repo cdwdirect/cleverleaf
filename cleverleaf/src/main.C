@@ -320,6 +320,7 @@ int main(int argc, char* argv[]) {
 
     double step_exec_start = 0.0;
     double step_exec_total = 0.0;
+    double all_steps_total = 0.0;
 
     tbox::pout << "CSV,build,policy_index,schedule,step,step_exec_time," \
         "sim_time_start,sim_time_done,current_dt,apollo_xmit_time" << std::endl;
@@ -361,6 +362,7 @@ int main(int argc, char* argv[]) {
       }
 
       step_exec_total = MPI_Wtime() - step_exec_start;
+      all_steps_total += step_exec_total;
 
 #ifdef ENABLE_APOLLO
       APOLLO_TIME(APOLLO_time_before_flush);
@@ -412,7 +414,7 @@ int main(int argc, char* argv[]) {
 
     MPI_Barrier(MPI_COMM_WORLD);
     double end = MPI_Wtime();
-    //SAMRAI::tbox::pout << "== CLEVERLEAF: Total time elapsed = " << (end - start) << std::endl;
+    //SAMRAI::tbox::pout << "== CLEVERLEAF: Time for all steps = " << all_steps_total << std::endl;
 #ifdef ENABLE_APOLLO
     //SAMRAI::tbox::pout << "== CLEVERLEAF: Total time spent flushing data to Apollo = " << APOLLO_time_cumulative << std::endl;
 #endif

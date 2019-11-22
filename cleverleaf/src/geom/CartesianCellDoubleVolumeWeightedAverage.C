@@ -108,6 +108,7 @@ void CartesianCellDoubleVolumeWeightedAverage::coarsen(
       const Real Vf = fdx[0]*fdx[1];
       const Real Vc = cdx[0]*cdx[1];
 
+  FORCEINLINE_MACRO
       SAMRAI::pdat::parallel_for_all(coarse_box, [=] SAMRAI_HOST_DEVICE (int k, int j) {
         Real spv = 0.0;
         for (int r0 = 0; r0 < r.x; r0++) {

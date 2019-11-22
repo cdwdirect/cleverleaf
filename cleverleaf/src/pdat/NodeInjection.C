@@ -79,6 +79,7 @@ void NodeInjection<TYPE>::coarsen(
       auto coarse_array = SAMRAI::pdat::get_view<Dim, NodeData>(coarse_data, depth);
       auto fine_array = SAMRAI::pdat::get_const_view<Dim, NodeData>(fine_data, depth);
 
+  FORCEINLINE_MACRO
       SAMRAI::pdat::parallel_for_all(SAMRAI::pdat::NodeGeometry::toNodeBox(coarse_box), [=] SAMRAI_HOST_DEVICE (int k, int j) {
         const int j_fine = j*r.x;
         const int k_fine = k*r.y;

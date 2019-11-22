@@ -132,11 +132,13 @@ void CartesianCellDoubleConservativeLinearRefine::refine(
 
     if (dim == SAMRAI::tbox::Dimension(2)) {
 
+  FORCEINLINE_MACRO
       SAMRAI::pdat::parallel_for_all(coarse_node_box, [=] SAMRAI_HOST_DEVICE (int k, int j) {
         diff0(j,k) = coarse_array(j,k) - coarse_array(j-1,k);
         diff1(j,k) = coarse_array(j,k) - coarse_array(j,k-1);
       });
 
+  FORCEINLINE_MACRO
       SAMRAI::pdat::parallel_for_all(coarse_box, [=] SAMRAI_HOST_DEVICE (int k, int j) {
         const Real coef2j = 0.5*(diff0(j+1,k)+diff0(j,k));
         const Real boundj = 2.0*MIN(abs(diff0(j+1,k)),abs(diff0(j,k)));
@@ -157,6 +159,7 @@ void CartesianCellDoubleConservativeLinearRefine::refine(
         }
       });
 
+  FORCEINLINE_MACRO
       SAMRAI::pdat::parallel_for_all(fine_box, [=] SAMRAI_HOST_DEVICE (int k, int j) {
         const int ic1 = (k < 0) ? (k+1)/r.y-1 : k/r.y;
         const int ic0 = (j < 0) ? (j+1)/r.x-1 : j/r.x;
