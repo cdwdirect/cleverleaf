@@ -11,11 +11,11 @@
 #ifndef included_pdat_ForAll
 #define included_pdat_ForAll
 
-#define FORCEINLINE_MACRO \
-    #ifdef ENABLE_APOLLO \
-        _Pragma("forceinline recursive") \
-    #endif
-//#define FORCEINLINE_MACRO
+//#define FORCEINLINE_MACRO \
+//    #if ENABLE_APOLLO \
+//        _Pragma("forceinline recursive") \
+//    #endif
+#define FORCEINLINE_MACRO
 
 #include "SAMRAI/SAMRAI_config.h"
 

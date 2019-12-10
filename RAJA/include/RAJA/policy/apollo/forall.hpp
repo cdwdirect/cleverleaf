@@ -58,54 +58,53 @@
 
 #include "CallpathRuntime.h"
 
-int g_apollo_num_threads;
 
-namespace RAJA
-{
-namespace policy
-{
-namespace omp
-{
+//namespace RAJA
+//{
+//namespace policy
+//{
+//namespace omp
+//{
 
-template <typename Iterable, typename Func>
-RAJA_INLINE void forall_impl(const RAJA::apollo_omp_auto&, Iterable&& iter, Func&& loop_body) {
-  RAJA_EXTRACT_BED_IT(iter);
-#pragma omp parallel for num_threads(g_apollo_num_threads) schedule(auto)
-  for (decltype(distance_it) i = 0; i < distance_it; ++i) {
-    loop_body(begin_it[i]);
-  }
-}
+//template <typename Iterable, typename Func>
+//RAJA_INLINE void forall_impl(const RAJA::apollo_omp_auto&, Iterable&& iter, Func&& loop_body) {
+//  RAJA_EXTRACT_BED_IT(iter);
+//#pragma omp parallel for num_threads(g_apollo_num_threads) schedule(auto)
+//  for (decltype(distance_it) i = 0; i < distance_it; ++i) {
+//    loop_body(begin_it[i]);
+//  }
+//}
+//
+//template <typename Iterable, typename Func>
+//RAJA_INLINE void forall_impl(const RAJA::apollo_omp_static&, Iterable&& iter, Func&& loop_body) {
+//  RAJA_EXTRACT_BED_IT(iter);
+//#pragma omp parallel for num_threads(g_apollo_num_threads) schedule(static)
+//  for (decltype(distance_it) i = 0; i < distance_it; ++i) {
+//    loop_body(begin_it[i]);
+//  }
+//}
+//
+//template <typename Iterable, typename Func>
+//RAJA_INLINE void forall_impl(const RAJA::apollo_omp_dynamic&, Iterable&& iter, Func&& loop_body) {
+//  RAJA_EXTRACT_BED_IT(iter);
+//#pragma omp parallel for num_threads(g_apollo_num_threads) schedule(dynamic)
+//  for (decltype(distance_it) i = 0; i < distance_it; ++i) {
+//    loop_body(begin_it[i]);
+//  }
+//}
+//
+//template <typename Iterable, typename Func>
+//RAJA_INLINE void forall_impl(const RAJA::apollo_omp_guided&, Iterable&& iter, Func&& loop_body) {
+//  RAJA_EXTRACT_BED_IT(iter);
+//#pragma omp parallel for num_threads(g_apollo_num_threads) schedule(guided)
+//  for (decltype(distance_it) i = 0; i < distance_it; ++i) {
+//    loop_body(begin_it[i]);
+//  }
+//}
 
-template <typename Iterable, typename Func>
-RAJA_INLINE void forall_impl(const RAJA::apollo_omp_static&, Iterable&& iter, Func&& loop_body) {
-  RAJA_EXTRACT_BED_IT(iter);
-#pragma omp parallel for num_threads(g_apollo_num_threads) schedule(static)
-  for (decltype(distance_it) i = 0; i < distance_it; ++i) {
-    loop_body(begin_it[i]);
-  }
-}
-
-template <typename Iterable, typename Func>
-RAJA_INLINE void forall_impl(const RAJA::apollo_omp_dynamic&, Iterable&& iter, Func&& loop_body) {
-  RAJA_EXTRACT_BED_IT(iter);
-#pragma omp parallel for num_threads(g_apollo_num_threads) schedule(dynamic)
-  for (decltype(distance_it) i = 0; i < distance_it; ++i) {
-    loop_body(begin_it[i]);
-  }
-}
-
-template <typename Iterable, typename Func>
-RAJA_INLINE void forall_impl(const RAJA::apollo_omp_guided&, Iterable&& iter, Func&& loop_body) {
-  RAJA_EXTRACT_BED_IT(iter);
-#pragma omp parallel for num_threads(g_apollo_num_threads) schedule(guided)
-  for (decltype(distance_it) i = 0; i < distance_it; ++i) {
-    loop_body(begin_it[i]);
-  }
-}
-
-}  // namespace omp
-}  // namespace policy
-}  // namespace RAJA
+//}  // namespace omp
+//}  // namespace policy
+//}  // namespace RAJA
 
 
 
@@ -120,22 +119,41 @@ namespace policy
 namespace apollo
 {
 
-//template <typename T>
-//int getTotalSize(T iterable) { return 0; }
-//template <>
-//int getTotalSize(RAJA::IndexSet idxSet)
-//{
-//    return idxSet.getLength();
-//}
-//
-//template <typename T>
-//int getSegmentCount(T iterable) { return 0; }
-//template <>
-//int getSegmentCount(RAJA::IndexSet idxSet)
-//{
-//    return idxSet.getNumSegments();
-//}
+template <typename Iterable, typename Func>
+RAJA_INLINE void forall_impl(const RAJA::apollo_omp_auto&, Iterable&& iter, Func&& loop_body) {
+  RAJA_EXTRACT_BED_IT(iter);
+#pragma omp parallel for num_threads(Apollo::instance()->numThreads) schedule(auto)
+  for (decltype(distance_it) i = 0; i < distance_it; ++i) {
+    loop_body(begin_it[i]);
+  }
+}
 
+template <typename Iterable, typename Func>
+RAJA_INLINE void forall_impl(const RAJA::apollo_omp_static&, Iterable&& iter, Func&& loop_body) {
+  RAJA_EXTRACT_BED_IT(iter);
+#pragma omp parallel for num_threads(Apollo::instance()->numThreads) schedule(static)
+  for (decltype(distance_it) i = 0; i < distance_it; ++i) {
+    loop_body(begin_it[i]);
+  }
+}
+
+template <typename Iterable, typename Func>
+RAJA_INLINE void forall_impl(const RAJA::apollo_omp_dynamic&, Iterable&& iter, Func&& loop_body) {
+  RAJA_EXTRACT_BED_IT(iter);
+#pragma omp parallel for num_threads(Apollo::instance()->numThreads) schedule(dynamic)
+  for (decltype(distance_it) i = 0; i < distance_it; ++i) {
+    loop_body(begin_it[i]);
+  }
+}
+
+template <typename Iterable, typename Func>
+RAJA_INLINE void forall_impl(const RAJA::apollo_omp_guided&, Iterable&& iter, Func&& loop_body) {
+  RAJA_EXTRACT_BED_IT(iter);
+#pragma omp parallel for num_threads(Apollo::instance()->numThreads) schedule(guided)
+  for (decltype(distance_it) i = 0; i < distance_it; ++i) {
+    loop_body(begin_it[i]);
+  }
+}
 
 
 
@@ -171,6 +189,7 @@ using apolloPolicyOMPGuided  = RAJA::apollo_omp_guided;
 
 template <typename BODY>
 RAJA_INLINE void apolloPolicySwitcher(int policy, int tc[], BODY body) {
+    Apollo *apollo             = Apollo::instance();
     switch(policy) {
         case   0: // The 0th policy is always a "safe" choice in Apollo as a
                   // default, or fail-safe when models are broken or partial..
@@ -178,15 +197,7 @@ RAJA_INLINE void apolloPolicySwitcher(int policy, int tc[], BODY body) {
                   // 0'th policy uses whatever was already set by the previous
                   // Apollo::Region's model, or the system defaults, if it is
                   // the first loop to get executed.
-                  // NOTE: We DO want to set this, so that models which are
-                  //       recommending it will (hopefully) get the same settings
-                  //       used in the training, if policy zero got recommended.
-                  // NOTE: It is not advised for policy 0 to be used in
-                  //       exhaustive searches when building models.
-                  //APOLLO_OMP_EXEC(apollo->ompDefaultNumThreads,
-                  //                apollo->ompDefaultSchedule,
-                  //                -1, body);
-                  //body(apolloPolicyOpenMP{});
+                  apollo->numThreads = apollo->ompDefaultNumThreads;
                   break;
         case   1: // The 1st policy is a Sequential option, which will come into
                   // play for iterations when the number of elements a loop is
@@ -196,32 +207,36 @@ RAJA_INLINE void apolloPolicySwitcher(int policy, int tc[], BODY body) {
                   // available, but the learned model will be able to make
                   // more significant performance improvements for applications
                   // with ocassional sparse inputs to loops.
-                  Apollo::instance()->setFeature("num_threads", 1.0);
+                  apollo->setFeature("num_threads", 1.0);
+                  apollo->numThreads = 1;
                   body(apolloPolicySeq{});
                   return;
-        case   2: g_apollo_num_threads = tc[0]; break;
-        case   3: g_apollo_num_threads = tc[1]; break;
-        case   4: g_apollo_num_threads = tc[2]; break;
-        case   5: g_apollo_num_threads = tc[3]; break;
-        case   6: g_apollo_num_threads = tc[4]; break;
-        case   7: g_apollo_num_threads = tc[5]; break;
-        case   8: g_apollo_num_threads = tc[0]; break;
-        case   9: g_apollo_num_threads = tc[1]; break;
-        case  10: g_apollo_num_threads = tc[2]; break;
-        case  11: g_apollo_num_threads = tc[3]; break;
-        case  12: g_apollo_num_threads = tc[4]; break;
-        case  13: g_apollo_num_threads = tc[5]; break;
-        case  14: g_apollo_num_threads = tc[0]; break;
-        case  15: g_apollo_num_threads = tc[1]; break;
-        case  16: g_apollo_num_threads = tc[2]; break;
-        case  17: g_apollo_num_threads = tc[3]; break;
-        case  18: g_apollo_num_threads = tc[4]; break;
-        case  19: g_apollo_num_threads = tc[5]; break;
+        case   2: apollo->numThreads = tc[0]; break;
+        case   3: apollo->numThreads = tc[1]; break;
+        case   4: apollo->numThreads = tc[2]; break;
+        case   5: apollo->numThreads = tc[3]; break;
+        case   6: apollo->numThreads = tc[4]; break;
+        case   7: apollo->numThreads = tc[5]; break;
+        case   8: apollo->numThreads = tc[0]; break;
+        case   9: apollo->numThreads = tc[1]; break;
+        case  10: apollo->numThreads = tc[2]; break;
+        case  11: apollo->numThreads = tc[3]; break;
+        case  12: apollo->numThreads = tc[4]; break;
+        case  13: apollo->numThreads = tc[5]; break;
+        case  14: apollo->numThreads = tc[0]; break;
+        case  15: apollo->numThreads = tc[1]; break;
+        case  16: apollo->numThreads = tc[2]; break;
+        case  17: apollo->numThreads = tc[3]; break;
+        case  18: apollo->numThreads = tc[4]; break;
+        case  19: apollo->numThreads = tc[5]; break;
     }
+
+    apollo->setFeature("num_threads", (double) apollo->numThreads);
 
     switch(policy) {
         case   0:
             body(apolloPolicyOMPDefault{});
+            break;
         case   2:
         case   3:
         case   4:

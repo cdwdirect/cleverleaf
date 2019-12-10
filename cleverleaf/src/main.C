@@ -414,9 +414,9 @@ int main(int argc, char* argv[]) {
 
     MPI_Barrier(MPI_COMM_WORLD);
     double end = MPI_Wtime();
-    //SAMRAI::tbox::pout << "== CLEVERLEAF: Time for all steps = " << all_steps_total << std::endl;
+    SAMRAI::tbox::pout << "== CLEVERLEAF: Time for all steps = " << all_steps_total << std::endl;
 #ifdef ENABLE_APOLLO
-    //SAMRAI::tbox::pout << "== CLEVERLEAF: Total time spent flushing data to Apollo = " << APOLLO_time_cumulative << std::endl;
+    SAMRAI::tbox::pout << "== CLEVERLEAF: Total time spent flushing data to Apollo = " << APOLLO_time_cumulative << std::endl;
 #endif
 
     /*
