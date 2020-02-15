@@ -16,10 +16,10 @@ shared=OFF
 cmake_cxx_standard="14"
 blt_cxx_std="c++14"
 
-export CXX=`which icpc`
-export CC=`which icc`
-export FC=`which ifort`
-export F90=`which ifort`
+#export CXX=`which icpc`
+#export CC=`which icc`
+#export FC=`which ifort`
+#export F90=`which ifort`
 
 while getopts d:na:hm:cp:rs opt; do
     case $opt in
@@ -116,10 +116,10 @@ export INTEL_OPT_FLAGS="  "
 #export INTEL_OPT_FLAGS="${INTEL_OPT_FLAGS} -no-inline-max-size "
 #export INTEL_OPT_FLAGS="${INTEL_OPT_FLAGS} -no-inline-max-total-size "
 #export INTEL_OPT_FLAGS="${INTEL_OPT_FLAGS} -no-inline-min-size "
-export INTEL_OPT_FLAGS="${INTEL_OPT_FLAGS} -qopt-report=5 "
-export INTEL_OPT_FLAGS="${INTEL_OPT_FLAGS} -qopt-report-phase all "
+#export INTEL_OPT_FLAGS="${INTEL_OPT_FLAGS} -qopt-report=5 "
+#export INTEL_OPT_FLAGS="${INTEL_OPT_FLAGS} -qopt-report-phase all "
 #export INTEL_OPT_FLAGS="${INTEL_OPT_FLAGS} -qopt-report-per-object "
-export INTEL_OPT_FLAGS="${INTEL_OPT_FLAGS} -qopt-report-file=$prefix/intel/$mode.normal.opt.$pkg.out "
+#export INTEL_OPT_FLAGS="${INTEL_OPT_FLAGS} -qopt-report-file=$prefix/intel/$mode.normal.opt.$pkg.out "
 
 export CXXFLAGS="  ${INTEL_OPT_FLAGS} ${CXXFLAGS}  "
 
@@ -141,7 +141,7 @@ if [ "$pkg" = RAJA ]; then
           -D CMAKE_INSTALL_PREFIX=$install_dir \
           -D CUDA_ARCH=$cuda_arch \
           -D BUILD_SHARED_LIBS=$shared \
-          -D APOLLO_DIR=/g/g17/wood67/src/apollo/install \
+          -D APOLLO_DIR=$HOME/src/apollo/install \
           -D ENABLE_APOLLO=$enable_apollo \
           -D OpenMP_CXX_FLAGS="-fopenmp" \
           -D OpenMP_C_FLAGS="-fopenmp" \
@@ -161,7 +161,7 @@ elif [ "$pkg" = hdf5 ]; then
           -D CMAKE_CXX_STANDARD=$cmake_cxx_standard \
           -D CMAKE_CXX_COMPILER=$CXX \
           -D CMAKE_BUILD_TYPE=$mode \
-          -D APOLLO_DIR=/g/g17/wood67/src/apollo/install \
+          -D APOLLO_DIR=$HOME/src/apollo/install \
           -D ENABLE_APOLLO=$enable_apollo \
           -D OpenMP_CXX_FLAGS="-fopenmp" \
           -D OpenMP_C_FLAGS="-fopenmp" \
@@ -182,7 +182,7 @@ elif [ "$pkg" = Umpire ]; then
           -D CMAKE_BUILD_TYPE=$mode \
           -D CMAKE_INSTALL_PREFIX=$install_dir \
           -D BUILD_SHARED_LIBS=$shared \
-          -D APOLLO_DIR=/g/g17/wood67/src/apollo/install \
+          -D APOLLO_DIR=$HOME/src/apollo/install \
           -D ENABLE_APOLLO=$enable_apollo \
           -D OpenMP_CXX_FLAGS="-fopenmp" \
           -D OpenMP_C_FLAGS="-fopenmp" \
@@ -213,7 +213,7 @@ elif [ "$pkg" = SAMRAI ]; then
           -D HDF5_DIR=$dep_install_prefix/hdf5/share/cmake \
           -D RAJA_DIR=$dep_install_prefix/RAJA/share/raja/cmake \
           -D umpire_DIR=$dep_install_prefix/Umpire/share/umpire/cmake \
-          -D APOLLO_DIR=/g/g17/wood67/src/apollo/install \
+          -D APOLLO_DIR=$HOME/src/apollo/install \
           -D ENABLE_APOLLO=$enable_apollo \
           -D OpenMP_CXX_FLAGS="-fopenmp" \
           -D OpenMP_C_FLAGS="-fopenmp" \
@@ -242,7 +242,7 @@ elif [ "$pkg" = cleverleaf ]; then
           -D CMAKE_CUDA_FLAGS="-arch=$cuda_arch" \
           -D CMAKE_PREFIX_PATH=$install_prefix/SAMRAI \
           -D BUILD_SHARED_LIBS=$shared \
-          -D APOLLO_DIR=/g/g17/wood67/src/apollo/install \
+          -D APOLLO_DIR=$HOME/src/apollo/install \
           -D ENABLE_APOLLO=$enable_apollo \
           -D OpenMP_CXX_FLAGS="-fopenmp" \
           -D OpenMP_C_FLAGS="-fopenmp" \
