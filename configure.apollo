@@ -16,10 +16,10 @@ shared=OFF
 cmake_cxx_standard="14"
 blt_cxx_std="c++14"
 
-#export CC=`which icc`
-#export CXX=`which icpc`
-#export F90=`which ifort`
-#export FC=`which ifort`
+export CC=`which icc`
+export CXX=`which icpc`
+export F90=`which ifort`
+export FC=`which ifort`
 
 while getopts d:na:hm:cp:rs opt; do
     case $opt in
@@ -113,15 +113,15 @@ export INTEL_OPT_FLAGS="  "
 #export INTEL_OPT_FLAGS="${INTEL_OPT_FLAGS} -no-inline-factor "
 #export INTEL_OPT_FLAGS="${INTEL_OPT_FLAGS} -no-inline-max-per-compile "
 #export INTEL_OPT_FLAGS="${INTEL_OPT_FLAGS} -no-inline-max-per-routine "
-#export INTEL_OPT_FLAGS="${INTEL_OPT_FLAGS} -no-inline-max-size "
-#export INTEL_OPT_FLAGS="${INTEL_OPT_FLAGS} -no-inline-max-total-size "
+export INTEL_OPT_FLAGS="${INTEL_OPT_FLAGS} -no-inline-max-size "
+export INTEL_OPT_FLAGS="${INTEL_OPT_FLAGS} -no-inline-max-total-size "
 #export INTEL_OPT_FLAGS="${INTEL_OPT_FLAGS} -no-inline-min-size "
 #export INTEL_OPT_FLAGS="${INTEL_OPT_FLAGS} -qopt-report=5 "
 #export INTEL_OPT_FLAGS="${INTEL_OPT_FLAGS} -qopt-report-phase all "
 #export INTEL_OPT_FLAGS="${INTEL_OPT_FLAGS} -qopt-report-per-object "
 #export INTEL_OPT_FLAGS="${INTEL_OPT_FLAGS} -qopt-report-file=$prefix/intel/$mode.apollo.opt.$pkg.out "
-
 export CXXFLAGS="  ${INTEL_OPT_FLAGS} ${CXXFLAGS}  "
+
 
 #export GCC_OPT_FLAGS="  "
 #export GCC_OPT_FLAGS="${GCC_OPT_FLAGS} -O3 "

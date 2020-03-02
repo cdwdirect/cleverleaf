@@ -11,15 +11,16 @@ enable_cuda=OFF
 enable_nvtx=OFF
 enable_omp=ON
 enable_apollo=OFF
+enable_openmp_trace=ON
 #
 shared=OFF
 cmake_cxx_standard="14"
 blt_cxx_std="c++14"
 
-#export CXX=`which icpc`
-#export CC=`which icc`
-#export FC=`which ifort`
-#export F90=`which ifort`
+export CXX=`which icpc`
+export CC=`which icc`
+export FC=`which ifort`
+export F90=`which ifort`
 
 while getopts d:na:hm:cp:rs opt; do
     case $opt in
@@ -113,15 +114,17 @@ export INTEL_OPT_FLAGS="  "
 #export INTEL_OPT_FLAGS="${INTEL_OPT_FLAGS} -no-inline-factor "
 #export INTEL_OPT_FLAGS="${INTEL_OPT_FLAGS} -no-inline-max-per-compile "
 #export INTEL_OPT_FLAGS="${INTEL_OPT_FLAGS} -no-inline-max-per-routine "
-#export INTEL_OPT_FLAGS="${INTEL_OPT_FLAGS} -no-inline-max-size "
-#export INTEL_OPT_FLAGS="${INTEL_OPT_FLAGS} -no-inline-max-total-size "
+export INTEL_OPT_FLAGS="${INTEL_OPT_FLAGS} -no-inline-max-size "
+export INTEL_OPT_FLAGS="${INTEL_OPT_FLAGS} -no-inline-max-total-size "
 #export INTEL_OPT_FLAGS="${INTEL_OPT_FLAGS} -no-inline-min-size "
 #export INTEL_OPT_FLAGS="${INTEL_OPT_FLAGS} -qopt-report=5 "
 #export INTEL_OPT_FLAGS="${INTEL_OPT_FLAGS} -qopt-report-phase all "
 #export INTEL_OPT_FLAGS="${INTEL_OPT_FLAGS} -qopt-report-per-object "
 #export INTEL_OPT_FLAGS="${INTEL_OPT_FLAGS} -qopt-report-file=$prefix/intel/$mode.normal.opt.$pkg.out "
-
 export CXXFLAGS="  ${INTEL_OPT_FLAGS} ${CXXFLAGS}  "
+
+
+#export CXXFLAGS="  ${CXXFLAGS} -DRAJA_ENABLE_OPENMP_TRACE -DENABLE_OPENMP_TRACE "
 
 #####
 
@@ -162,6 +165,7 @@ elif [ "$pkg" = hdf5 ]; then
           -D CMAKE_CXX_COMPILER=$CXX \
           -D CMAKE_BUILD_TYPE=$mode \
           -D APOLLO_DIR=$HOME/src/apollo/install \
+          -D ENABLE_OPENMP_TRACE=$enable_openmp_trace \
           -D ENABLE_APOLLO=$enable_apollo \
           -D OpenMP_CXX_FLAGS="-fopenmp" \
           -D OpenMP_C_FLAGS="-fopenmp" \
