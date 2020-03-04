@@ -123,8 +123,8 @@ export INTEL_OPT_FLAGS="${INTEL_OPT_FLAGS} -no-inline-max-total-size "
 #export INTEL_OPT_FLAGS="${INTEL_OPT_FLAGS} -qopt-report-file=$prefix/intel/$mode.normal.opt.$pkg.out "
 export CXXFLAGS="  ${INTEL_OPT_FLAGS} ${CXXFLAGS}  "
 
+export CXXFLAGS="  ${CXXFLAGS} -DRAJA_ENABLE_OPENMP_TRACE -DENABLE_OPENMP_TRACE "
 
-#export CXXFLAGS="  ${CXXFLAGS} -DRAJA_ENABLE_OPENMP_TRACE -DENABLE_OPENMP_TRACE "
 
 #####
 
@@ -217,6 +217,7 @@ elif [ "$pkg" = SAMRAI ]; then
           -D HDF5_DIR=$dep_install_prefix/hdf5/share/cmake \
           -D RAJA_DIR=$dep_install_prefix/RAJA/share/raja/cmake \
           -D umpire_DIR=$dep_install_prefix/Umpire/share/umpire/cmake \
+          -D callpath_DIR=$HOME/src/callpath/install/share/cmake/callpath \
           -D APOLLO_DIR=$HOME/src/apollo/install \
           -D ENABLE_APOLLO=$enable_apollo \
           -D OpenMP_CXX_FLAGS="-fopenmp" \
