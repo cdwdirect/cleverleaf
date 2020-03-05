@@ -33,25 +33,25 @@ function set_output_prefix() {
 set_output_prefix $1 $2 "RAJA"
 ./configure.$1 -m $2 -p package-$1 -c RAJA
 cd package-$1/$2/build/RAJA
-make -j 8 install
+make -j install
 cd ../../../../
 #
 set_output_prefix $1 $2 "Umpire"
 ./configure.$1 -m $2 -p package-$1 -c Umpire
 cd package-$1/$2/build/Umpire
-make -j 8 install
+make -j install
 cd ../../../../
 #
 set_output_prefix $1 $2 "SAMRAI"
 ./configure.$1 -m $2 -p package-$1 -c SAMRAI
 cd package-$1/$2/build/SAMRAI
-make -j 8 install
+make -j install
 cd ../../../../
 #
 set_output_prefix $1 $2 "cleverleaf"
 ./configure.$1 -m $2 -p package-$1 -c cleverleaf
 cd package-$1/$2/build/cleverleaf
-make -j 8 install
+make -j install
 cd ../../../../
 #
 #set +m
