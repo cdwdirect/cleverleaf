@@ -322,6 +322,10 @@ if (ENABLE_RAJA)
   set(pdat_depends ${pdat_depends} raja)
 endif ()
 
+if (ENABLE_OPENMP_TRACE)
+    set(pdat_depends ${pdat_depends} callpath)
+endif()
+
 if (ENABLE_CUDA)
   set(pdat_depends ${pdat_depends} cuda)
 endif ()

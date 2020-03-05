@@ -79,6 +79,22 @@ if (ENABLE_CUDA)
   endif ()
 endif ()
 
+if (ENABLE_OPENMP_TRACE)
+    add_definitions(" -DRAJA_ENABLE_OPENMP_TRACE -DENABLE_OPENMP_TRACE ")
+    find_package(callpath REQUIRED)
+    if(callpath_CONFIG_LOADED)
+        message(STATUS "---- CALLPATH:  Found!")
+        message(STATUS "---- CALLPATH:    callpath_INCLUDE_DIR = ${callpath_INCLUDE_DIR}")
+        message(STATUS "---- CALLPATH:    callpath_LIB_DIR     = ${callpath_LIB_DIR}")
+        blt_register_library(
+            NAME callpath
+            INCLUDES ${callpath_INCLUDE_DIR}
+            LIBRARIES ${callpath_LIB_DIR}/libcallpath.so)
+    else()
+        message(STATUS "---- CALLPATH:  ** ERROR ** Could not locate the callpath library.")
+    endif()
+endif()
+
 #if (ENABLE_APOLLO)
 #  message(STATUS "Building SAMRAI w/APOLLO Support")
 #  find_package(APOLLO REQUIRED)

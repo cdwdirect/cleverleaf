@@ -138,7 +138,7 @@ struct policy_traits<policy::parallel> {
 #else
     #ifdef RAJA_ENABLE_OPENMP_TRACE
         using Policy2d = RAJA::KernelPolicy<
-            RAJA::statement::For<1, RAJA::openmp_trace_parallel_for,
+            RAJA::statement::For<1, RAJA::openmp_trace_exec,
                 RAJA::statement::For<0, RAJA::loop_exec,
                     RAJA::statement::Lambda<0>
                 >

@@ -136,6 +136,10 @@ if (ENABLE_OPENMP)
   set(tbox_depends ${tbox_depends} openmp)
 endif ()
 
+if (ENABLE_OPENMP_TRACE)
+    set(tbox_depends ${tbox_depends} callpath)
+endif ()
+
 if (ENABLE_RAJA)
   set(tbox_depends ${tbox_depends} raja)
 endif ()
