@@ -2,6 +2,7 @@ intel
 apollo-test
 package-apollo
 package-normal
+package-traced
 apollo-backup
 RAJA-backup
 cleverleaf-apollo.bkup

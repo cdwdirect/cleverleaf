@@ -11,7 +11,6 @@ enable_cuda=OFF
 enable_nvtx=OFF
 enable_omp=ON
 enable_apollo=OFF
-enable_openmp_trace=ON
 #
 shared=OFF
 cmake_cxx_standard="14"
@@ -163,7 +162,6 @@ elif [ "$pkg" = hdf5 ]; then
           -D CMAKE_CXX_COMPILER=$CXX \
           -D CMAKE_BUILD_TYPE=$mode \
           -D APOLLO_DIR=$HOME/src/apollo/install \
-          -D ENABLE_OPENMP_TRACE=$enable_openmp_trace \
           -D ENABLE_APOLLO=$enable_apollo \
           -D OpenMP_CXX_FLAGS="-fopenmp" \
           -D OpenMP_C_FLAGS="-fopenmp" \
