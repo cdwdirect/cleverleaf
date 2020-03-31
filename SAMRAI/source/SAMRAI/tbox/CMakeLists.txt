@@ -142,6 +142,7 @@ endif ()
 
 if (ENABLE_RAJA)
   set(tbox_depends ${tbox_depends} raja)
+  set(tbox_depends ${tbox_depends} callpath)
 endif ()
 
 if (ENABLE_CUDA)

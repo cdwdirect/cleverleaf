@@ -174,7 +174,7 @@ struct policy_traits<policy::parallel> {
       >
    >;
 
-   using ReductionPolicy = RAJA::seq_reduce;
+   using ReductionPolicy = RAJA::omp_reduce;
 };
 
 #endif // HAVE_CUDA

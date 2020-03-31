@@ -47,21 +47,21 @@ if (ENABLE_APOLLO)
       message(STATUS "---- APOLLO:    APOLLO_INCLUDE_DIRS = ${APOLLO_INCLUDE_DIRS}")
       message(STATUS "---- APOLLO:    APOLLO_LIB_DIRS     = ${APOLLO_LIB_DIRS}")
       message(STATUS "---- APOLLO:    APOLLO_LIBRARY      = ${APOLLO_LIBRARY}")
-    find_package(callpath REQUIRED)
-    if(callpath_CONFIG_LOADED)
-      message(STATUS "CALLPATH enabled")
-      #message(STATUS "---- CALLPATH:    callpath_INCLUDE_DIR = ${callpath_INCLUDE_DIR}")
-      #message(STATUS "---- CALLPATH:    callpath_LIB_DIR     = ${callpath_LIB_DIR}")
-      blt_register_library(
-        NAME callpath
-        INCLUDES ${callpath_INCLUDE_DIR}
-        LIBRARIES ${callpath_LIB_DIR}/libcallpath.so)
-    else()
-      message(STATUS "CALLPATH NOT FOUND")
-      #message(STATUS "---- CALLPATH:  ** ERROR ** Could not locate the callpath library.")
-    endif(callpath_CONFIG_LOADED)
   endif(APOLLO_FOUND)
 endif ()
+
+find_package(callpath REQUIRED)
+if(callpath_CONFIG_LOADED)
+  message(STATUS "CALLPATH enabled")
+  message(STATUS "---- CALLPATH:    callpath_INCLUDE_DIR = ${callpath_INCLUDE_DIR}")
+  message(STATUS "---- CALLPATH:    callpath_LIB_DIR     = ${callpath_LIB_DIR}")
+  blt_register_library(
+    NAME callpath
+    INCLUDES ${callpath_INCLUDE_DIR}
+    LIBRARIES ${callpath_LIB_DIR}/libcallpath.so)
+else()
+  message(STATUS "CALLPATH NOT FOUND")
+endif(callpath_CONFIG_LOADED)
 
 # ----- deps -----
 find_package(RAJA REQUIRED)
