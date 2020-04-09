@@ -112,7 +112,7 @@ void ArrayDataOperationUtilities<TYPE, OP>::doArrayDataOperationOnBox(
          auto dest = get_view<2>(dst, d);
          auto source = get_const_view<2>(src, d);
 
-         pdat::parallel_for_all(opbox, [=] SAMRAI_HOST_DEVICE (int j, int i) mutable {
+         pdat::parallel_for_all(opbox, [=] SAMRAI_HOST_DEVICE (int j, int i) {
             op(dest(i, j), source(i, j));
          });
       } break;
@@ -292,7 +292,7 @@ void ArrayDataOperationUtilities<TYPE, OP>::doArrayDataBufferOperationOnBox(
           typename pdat::ArrayData<TYPE>::template View<2> dest(dst_ptr + dst_offset, dst_box);
           typename pdat::ArrayData<TYPE>::template ConstView<2> source(src_ptr + src_offset, src_box);
 
-         pdat::parallel_for_all(opbox, [=] SAMRAI_HOST_DEVICE (int j, int i) mutable {
+         pdat::parallel_for_all(opbox, [=] SAMRAI_HOST_DEVICE (int j, int i) {
              op(dest(i, j), source(i, j));
          });
          } break;

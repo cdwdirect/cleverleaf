@@ -16,10 +16,10 @@ shared=OFF
 cmake_cxx_standard="14"
 blt_cxx_std="c++14"
 
-export CC=`which icc`
-export CXX=`which icpc`
-export F90=`which ifort`
-export FC=`which ifort`
+export CC=`which gcc`
+export CXX=`which g++`
+export F90=`which gfortran`
+export FC=`which gfortran`
 
 while getopts d:na:hm:cp:rs opt; do
     case $opt in
@@ -108,26 +108,6 @@ fi
 mkdir -p $build_dir
 mkdir -p $install_dir
 
-export INTEL_OPT_FLAGS="  "
-#export INTEL_OPT_FLAGS="${INTEL_OPT_FLAGS} -qoverride-limits "
-#export INTEL_OPT_FLAGS="${INTEL_OPT_FLAGS} -no-inline-factor "
-#export INTEL_OPT_FLAGS="${INTEL_OPT_FLAGS} -no-inline-max-per-compile "
-#export INTEL_OPT_FLAGS="${INTEL_OPT_FLAGS} -no-inline-max-per-routine "
-export INTEL_OPT_FLAGS="${INTEL_OPT_FLAGS} -no-inline-max-size "
-export INTEL_OPT_FLAGS="${INTEL_OPT_FLAGS} -no-inline-max-total-size "
-#export INTEL_OPT_FLAGS="${INTEL_OPT_FLAGS} -no-inline-min-size "
-#export INTEL_OPT_FLAGS="${INTEL_OPT_FLAGS} -qopt-report=5 "
-#export INTEL_OPT_FLAGS="${INTEL_OPT_FLAGS} -qopt-report-phase all "
-#export INTEL_OPT_FLAGS="${INTEL_OPT_FLAGS} -qopt-report-per-object "
-#export INTEL_OPT_FLAGS="${INTEL_OPT_FLAGS} -qopt-report-file=$prefix/intel/$mode.apollo.opt.$pkg.out "
-export CXXFLAGS="  ${INTEL_OPT_FLAGS} ${CXXFLAGS}  "
-
-
-#export GCC_OPT_FLAGS="  "
-#export GCC_OPT_FLAGS="${GCC_OPT_FLAGS} -O3 "
-#export CXXFLAGS="  ${GCC_OPT_FLAGS}   ${CXXFLAGS}"
-
-
 if [ "$pkg" = RAJA ]; then
     cd $build_dir
     cmake -Wno-dev \
@@ -205,9 +185,9 @@ elif [ "$pkg" = SAMRAI ]; then
           -D CUDA_ARCH=$cuda_arch \
           -D ENABLE_MPI=ON \
           -D ENABLE_FIND_MPI=ON \
-          -D MPI_C_COMPILER=/usr/tce/packages/mvapich2/mvapich2-2.3-intel-19.0.4/bin/mpicc \
-          -D MPI_CXX_COMPILER=/usr/tce/packages/mvapich2/mvapich2-2.3-intel-19.0.4/bin/mpicxx \
-          -D MPI_Fortran_COMPILER=/usr/tce/packages/mvapich2/mvapich2-2.3-intel-19.0.4/bin/mpifort \
+          -D MPI_C_COMPILER=mpicc \
+          -D MPI_CXX_COMPILER=mpicxx \
+          -D MPI_Fortran_COMPILER=mpifort \
           -D HDF5_DIR=$dep_install_prefix/hdf5/share/cmake \
           -D RAJA_DIR=$dep_install_prefix/RAJA/share/raja/cmake \
           -D umpire_DIR=$dep_install_prefix/Umpire/share/umpire/cmake \

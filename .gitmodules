@@ -1,3 +1,4 @@
 [submodule "RAJA"]
 	path = RAJA
-	url = git@github.com:cdwdirect/raja.git
+	url = git@github.com:ggeorgakoudis/raja.git
+    branch = mpi-opencv

@@ -85,9 +85,10 @@ struct for_all {};
 template <>
 struct for_all<1> {
    template <typename Policy, typename LoopBody>
-   inline static void eval(const hier::Index& ifirst, const hier::Index& ilast, LoopBody body)
+   inline  __attribute__((always_inline))
+   static void eval(const hier::Index& ifirst, const hier::Index& ilast, LoopBody body)
    {
-#pragma forceinline recursive
+//#pragma forceinline recursive
        RAJA::kernel<typename tbox::detail::policy_traits<Policy>::Policy1d>(
          RAJA::make_tuple(make_range(ifirst, ilast, 0)),
          body);
@@ -97,9 +98,10 @@ struct for_all<1> {
 template <>
 struct for_all<2> {
    template <typename Policy, typename LoopBody>
-   inline static void eval(const hier::Index& ifirst, const hier::Index& ilast, LoopBody body)
+   inline  __attribute__((always_inline))
+   static void eval(const hier::Index& ifirst, const hier::Index& ilast, LoopBody body)
    {
-#pragma forceinline recursive
+//#pragma forceinline recursive
       RAJA::kernel<typename tbox::detail::policy_traits<Policy>::Policy2d>(
          RAJA::make_tuple(make_range(ifirst, ilast, 1),
                           make_range(ifirst, ilast, 0)),
@@ -110,9 +112,10 @@ struct for_all<2> {
 template <>
 struct for_all<3> {
    template <typename Policy, typename LoopBody>
-   inline static void eval(const hier::Index& ifirst, const hier::Index& ilast, LoopBody body)
+   inline  __attribute__((always_inline))
+   static void eval(const hier::Index& ifirst, const hier::Index& ilast, LoopBody body)
    {
-#pragma forceinline recursive
+//#pragma forceinline recursive
       RAJA::kernel<typename tbox::detail::policy_traits<Policy>::Policy3d>(
          RAJA::make_tuple(make_range(ifirst, ilast, 2),
                           make_range(ifirst, ilast, 1),

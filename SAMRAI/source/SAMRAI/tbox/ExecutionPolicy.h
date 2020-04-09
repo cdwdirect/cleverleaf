@@ -128,13 +128,20 @@ struct policy_traits<policy::parallel> {
        //                          RAJA::Arglist<1, 0>, // row, col
 
 #ifdef ENABLE_APOLLO
-    using Policy2d = RAJA::KernelPolicy<
-        RAJA::statement::For<1, RAJA::apollo_exec,
-            RAJA::statement::For<0, RAJA::loop_exec,
-                RAJA::statement::Lambda<0>
-            >
+    //using Policy2d = RAJA::KernelPolicy<
+    //    RAJA::statement::For<1, RAJA::apollo_exec,
+    //        RAJA::statement::For<0, RAJA::loop_exec,
+    //            RAJA::statement::Lambda<0>
+    //        >
+    //    >
+    //>;
+   using Policy2d = RAJA::KernelPolicy<
+        RAJA::statement::Collapse<RAJA::apollo_collapse_exec,
+                                  RAJA::ArgList<1, 0>,
+        RAJA::statement::Lambda<0>
         >
     >;
+
 #else
     #ifdef RAJA_ENABLE_OPENMP_TRACE
         using Policy2d = RAJA::KernelPolicy<
@@ -145,11 +152,17 @@ struct policy_traits<policy::parallel> {
             >
         >;
     #else
+        //using Policy2d = RAJA::KernelPolicy<
+        //    RAJA::statement::For<1, RAJA::omp_parallel_for_exec,
+        //        RAJA::statement::For<0, RAJA::loop_exec,
+        //            RAJA::statement::Lambda<0>
+        //        >
+        //    >
+        //>;
         using Policy2d = RAJA::KernelPolicy<
-            RAJA::statement::For<1, RAJA::omp_parallel_for_exec,
-                RAJA::statement::For<0, RAJA::loop_exec,
-                    RAJA::statement::Lambda<0>
-                >
+            RAJA::statement::Collapse<RAJA::omp_parallel_collapse_exec,
+            RAJA::ArgList<1, 0>,
+            RAJA::statement::Lambda<0>
             >
         >;
     #endif
