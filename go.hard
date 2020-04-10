@@ -45,9 +45,9 @@ cd ..
 echo "    RAJA_LOCAL   = ${RAJA_LOCAL}"
 echo "    RAJA_REMOTE  = ${RAJA_REMOTE}"
 echo "    RAJA_BASE    = ${RAJA_BASE}"
-if [ $LOCAL = $REMOTE ]; then
+if [ $RAJA_LOCAL = $RAJA_REMOTE ]; then
     echo "Your RAJA is up to date!"
-elif [ $LOCAL = $BASE ]; then
+elif [ $RAJA_LOCAL = $RAJA_BASE ]; then
     echo "There are RAJA updates!"
     read -p "Merge the latest uodates into your copy of the RAJA submodule? [Y/n]: " -i Y -e reply
     if [ "$reply" == "Y" ]
@@ -58,7 +58,7 @@ elif [ $LOCAL = $BASE ]; then
     else
         echo "NOTE: You have chosen to NOT merge the available RAJA updates."
     fi
-elif [ $REMOTE = $BASE ]; then
+elif [ $RAJA_REMOTE = $RAJA_BASE ]; then
     echo "NOTE: You have made changes to your copy of the RAJA repo, and may need to push!"
 else
     echo "NOTE: Your RAJA submodule has diverged from the origin. Doing nothing."

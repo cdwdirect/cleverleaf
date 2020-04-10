@@ -16,10 +16,11 @@ shared=OFF
 cmake_cxx_standard="14"
 blt_cxx_std="c++14"
 
-export CC=`which icc`
 export CXX=`which icpc`
-export F90=`which ifort`
+export CC=`which icc`
 export FC=`which ifort`
+export F90=`which ifort`
+
 
 while getopts d:na:hm:cp:rs opt; do
     case $opt in
@@ -121,7 +122,6 @@ export INTEL_OPT_FLAGS="${INTEL_OPT_FLAGS} -no-inline-max-total-size "
 #export INTEL_OPT_FLAGS="${INTEL_OPT_FLAGS} -qopt-report-per-object "
 #export INTEL_OPT_FLAGS="${INTEL_OPT_FLAGS} -qopt-report-file=$prefix/intel/$mode.apollo.opt.$pkg.out "
 export CXXFLAGS="  ${INTEL_OPT_FLAGS} ${CXXFLAGS}  "
-
 
 #export GCC_OPT_FLAGS="  "
 #export GCC_OPT_FLAGS="${GCC_OPT_FLAGS} -O3 "
