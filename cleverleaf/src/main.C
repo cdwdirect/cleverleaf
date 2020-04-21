@@ -67,6 +67,14 @@ static bool fileExists(const std::string& path);
 
 int main(int argc, char* argv[]) {
   tbox::SAMRAI_MPI::init(&argc, &argv);
+#ifdef ENABLE_APOLLO
+    double APOLLO_time_before_flush = 0.0;
+    double APOLLO_time_after_flush  = 0.0;
+    double APOLLO_time_this_step    = 0.0;
+    double APOLLO_time_cumulative   = 0.0;
+    Apollo *apollo = Apollo::instance();
+#endif
+
   tbox::SAMRAIManager::initialize();
   tbox::SAMRAIManager::startup();
 
@@ -306,14 +314,6 @@ int main(int argc, char* argv[]) {
 
     MPI_Barrier(MPI_COMM_WORLD);
     double start = MPI_Wtime();
-
-#ifdef ENABLE_APOLLO
-    double APOLLO_time_before_flush = 0.0;
-    double APOLLO_time_after_flush  = 0.0;
-    double APOLLO_time_this_step    = 0.0;
-    double APOLLO_time_cumulative   = 0.0;
-    Apollo *apollo = Apollo::instance();
-#endif
 
     Real loop_time_start = loop_time;
     Real loop_time_stop  = loop_time;
